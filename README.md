@@ -1,6 +1,7 @@
-# Circunomics – GitHub Trending Repos
+# Circunomics — GitHub Trending Repos
 
-A polished Angular 21 web app listing the most-starred GitHub repositories created in the last 30 days, built as a coding challenge submission for Circunomics.
+A polished Angular 21 web app listing the most-starred GitHub repositories created in the last
+30 days, built as a coding challenge submission for Circunomics.
 
 > **Full architecture, decisions, and tradeoffs are documented in [PROJECT.md](./PROJECT.md).**
 
@@ -46,13 +47,24 @@ npm start
 
 ## GitHub API rate limits
 
-The app uses the public GitHub Search API (`api.github.com`), which is rate-limited to **10 requests/minute** unauthenticated.
+The app uses the public GitHub Search API (`api.github.com`), which allows **10 requests/minute**
+unauthenticated and **5,000 requests/hour** with a Personal Access Token.
 
-To raise this to **5,000 requests/hour**, you can supply a GitHub Personal Access Token (no scopes required for public API access):
+To use a token locally:
 
-1. Generate a token at [github.com/settings/tokens](https://github.com/settings/tokens)
-2. Create a **local, gitignored** file at `src/environments/environment.local.ts`
-3. Set `githubToken: 'your_token_here'` and wire it via a local `fileReplacement` in `angular.json`
+1. Generate a fine-grained token at [github.com/settings/tokens](https://github.com/settings/tokens)
+   — no scopes are required for public API access.
+2. Create `src/environments/environment.local.ts` (this file is gitignored — never commit it):
+   ```typescript
+   export const environment = {
+     production: false,
+     githubToken: 'your_token_here',
+   };
+   ```
+3. Add a `fileReplacement` entry in your local `angular.json` pointing to this file.
+
+The token is sent only as a `Bearer` Authorization header to `api.github.com`.
+It is never stored, logged, or persisted beyond the HTTP request.
 
 **Never commit a token to source control.**
 
@@ -74,4 +86,4 @@ To raise this to **5,000 requests/hour**, you can supply a GitHub Personal Acces
 
 ## Project structure
 
-See [PROJECT.md](./PROJECT.md) for the full architecture overview.
+See [PROJECT.md](./PROJECT.md) and [ARCHITECTURE.md](./ARCHITECTURE.md) for full details.
