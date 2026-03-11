@@ -4,12 +4,15 @@ export const environment = {
    * Optional GitHub Personal Access Token to raise the unauthenticated API rate limit
    * from 10 req/min to 5,000 req/hr.
    *
-   * How to set:
-   *   1. Generate a token at https://github.com/settings/tokens (no scopes needed for public API)
-   *   2. Set the GITHUB_TOKEN environment variable before running `ng serve`, OR
-   *   3. Replace the empty string below (DO NOT commit a real token to source control).
+   * DO NOT insert a real token here — this file is tracked by git.
    *
-   * The token is sent as a Bearer header and is never stored beyond the browser session.
+   * Recommended approaches (pick one):
+   *   1. Copy `environment.ts` to `environment.local.ts`, add it to .gitignore,
+   *      and reference it via a local fileReplacement in angular.json (not committed).
+   *   2. Inject via your deployment platform's secrets/environment configuration.
+   *
+   * The token is sent only as a Bearer Authorization header to api.github.com.
+   * It is never stored, logged, or persisted beyond the HTTP request.
    */
   githubToken: '',
 };

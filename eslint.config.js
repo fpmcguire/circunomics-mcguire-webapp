@@ -5,6 +5,17 @@ const angular = require('angular-eslint');
 
 module.exports = tseslint.config(
   {
+    // Ignore all generated, build, and report output folders
+    ignores: [
+      'dist/**',
+      '.angular/**',
+      'coverage/**',
+      'playwright-report/**',
+      'test-results/**',
+      'node_modules/**',
+    ],
+  },
+  {
     files: ['**/*.ts'],
     extends: [
       eslint.configs.recommended,

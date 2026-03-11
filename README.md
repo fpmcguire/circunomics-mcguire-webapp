@@ -1,59 +1,77 @@
-# CircunomicsMcguireWebapp
+# Circunomics – GitHub Trending Repos
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.1.1.
+A polished Angular 21 web app listing the most-starred GitHub repositories created in the last 30 days, built as a coding challenge submission for Circunomics.
 
-## Development server
+> **Full architecture, decisions, and tradeoffs are documented in [PROJECT.md](./PROJECT.md).**
 
-To start a local development server, run:
+---
 
-```bash
-ng serve
-```
+## Getting started
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+### Prerequisites
 
-## Code scaffolding
+- Node.js 20+
+- npm 11+
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+### Install dependencies
 
 ```bash
-ng generate --help
+npm install
 ```
 
-## Building
-
-To build the project run:
+### Run the development server
 
 ```bash
-ng build
+npm start
+# → http://localhost:4200
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+---
 
-## Running unit tests
+## Available commands
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+| Command | Description |
+|---|---|
+| `npm start` | Start dev server at `localhost:4200` |
+| `npm run build` | Production build |
+| `npm test` | Run unit/integration tests (Vitest) |
+| `npm run test:watch` | Run tests in watch mode |
+| `npm run lint` | Run ESLint |
+| `npm run format` | Format source with Prettier |
+| `npm run format:check` | Check formatting without writing |
+| `npm run e2e` | Run Playwright E2E tests |
+| `npm run e2e:ui` | Open Playwright interactive UI |
 
-```bash
-ng test
-```
+---
 
-## Running end-to-end tests
+## GitHub API rate limits
 
-For end-to-end (e2e) testing, run:
+The app uses the public GitHub Search API (`api.github.com`), which is rate-limited to **10 requests/minute** unauthenticated.
 
-```bash
-ng e2e
-```
+To raise this to **5,000 requests/hour**, you can supply a GitHub Personal Access Token (no scopes required for public API access):
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+1. Generate a token at [github.com/settings/tokens](https://github.com/settings/tokens)
+2. Create a **local, gitignored** file at `src/environments/environment.local.ts`
+3. Set `githubToken: 'your_token_here'` and wire it via a local `fileReplacement` in `angular.json`
 
-## Additional Resources
+**Never commit a token to source control.**
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+---
+
+## Tooling
+
+| Tool | Purpose |
+|---|---|
+| Angular 21 | Framework — standalone components, signals, modern control flow |
+| Vitest | Unit and integration test runner |
+| Playwright | End-to-end tests |
+| ESLint + angular-eslint | Linting (flat config, ESLint 10) |
+| Prettier | Code formatting |
+| @angular/cdk | Accessible dialog, future drag support |
+| @testing-library/angular | Integration testing utilities |
+
+---
+
+## Project structure
+
+See [PROJECT.md](./PROJECT.md) for the full architecture overview.
