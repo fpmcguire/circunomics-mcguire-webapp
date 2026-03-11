@@ -57,7 +57,7 @@
     transition: background var(--transition-fast), color var(--transition-fast);
 
     &:hover,
-    &[aria-current='page'] {
+    &--active {
       background: var(--color-primary-light);
       color: var(--color-primary);
     }
