@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError, map, shareReplay } from 'rxjs/operators';
+import { catchError, finalize, map, shareReplay } from 'rxjs/operators';
 
 import { GithubApiSearchResponse } from '../datasources/github-api.types';
 import { mapApiRepo } from '../../domain/mappers/github-repo.mapper';
@@ -9,10 +9,9 @@ import {
   TrendingReposPage,
   TrendingReposQuery,
   TrendingReposRepository,
-} from './trending-repos.repository';
+} from '../../domain/repositories/trending-repos.repository';
 import { buildCreatedAfterQuery } from '../../../../core/utils/github-query.utils';
 import { AppError, APP_ERRORS } from '../../../../shared/models/app-error.model';
-import { HttpErrorResponse } from '@angular/common/http';
 
 const GITHUB_API_BASE = 'https://api.github.com/search/repositories';
 
@@ -23,13 +22,13 @@ export class GithubTrendingReposRepository extends TrendingReposRepository {
   /**
    * Cache of in-flight requests keyed by a canonical request string.
    * Prevents duplicate concurrent fetches for the same page.
+   * Cleaned up via finalize() in the stream — not via internal subscriptions.
    */
   private readonly inFlight = new Map<string, Observable<TrendingReposPage>>();
 
   override fetchTrendingRepos(query: TrendingReposQuery): Observable<TrendingReposPage> {
     const cacheKey = this.buildCacheKey(query);
 
-    // Return the existing in-flight observable if one is already running
     const existing = this.inFlight.get(cacheKey);
     if (existing) {
       return existing;
@@ -45,19 +44,14 @@ export class GithubTrendingReposRepository extends TrendingReposRepository {
     const request$ = this.http.get<GithubApiSearchResponse>(GITHUB_API_BASE, { params }).pipe(
       map((response) => this.mapResponse(response, query)),
       catchError((error: HttpErrorResponse) => throwError(() => this.mapError(error))),
-      // shareReplay ensures multiple subscribers get the same result
-      // and cleans up the cache entry once the request completes
+      // Clean up the in-flight cache entry when the stream completes or errors.
+      // Using finalize() keeps cache lifecycle inside the stream — avoids a
+      // separate internal subscribe() just for side effects.
+      finalize(() => this.inFlight.delete(cacheKey)),
       shareReplay({ bufferSize: 1, refCount: true }),
     );
 
     this.inFlight.set(cacheKey, request$);
-
-    // Clean up the cache entry after completion or error
-    request$.subscribe({
-      complete: () => this.inFlight.delete(cacheKey),
-      error: () => this.inFlight.delete(cacheKey),
-    });
-
     return request$;
   }
 
@@ -65,28 +59,58 @@ export class GithubTrendingReposRepository extends TrendingReposRepository {
     response: GithubApiSearchResponse,
     query: TrendingReposQuery,
   ): TrendingReposPage {
-    const repos = response.items.map(mapApiRepo);
-    const fetchedSoFar = (query.page - 1) * query.perPage + repos.length;
-    const isLastPage = repos.length < query.perPage || fetchedSoFar >= response.total_count;
+    // Guard: validate the response shape before attempting to map.
+    // GitHub occasionally returns unexpected shapes on degraded API responses.
+    if (!this.isValidResponse(response)) {
+      throw APP_ERRORS.unknown();
+    }
 
-    return { repos, totalCount: response.total_count, isLastPage };
+    const repos = response.items.map(mapApiRepo);
+    const totalCount = response.total_count;
+
+    // Explicit empty-result check: zero items is a valid, meaningful outcome —
+    // not an error. The facade uses isLastPage + repos.length === 0 to show
+    // the empty state rather than an error state.
+    if (repos.length === 0) {
+      return { repos: [], totalCount, isLastPage: true };
+    }
+
+    const fetchedSoFar = (query.page - 1) * query.perPage + repos.length;
+    const isLastPage = repos.length < query.perPage || fetchedSoFar >= totalCount;
+
+    return { repos, totalCount, isLastPage };
+  }
+
+  /**
+   * Guards against malformed API responses before mapping begins.
+   * Returns false if the response is missing required fields or has unexpected types.
+   */
+  private isValidResponse(response: unknown): response is GithubApiSearchResponse {
+    if (typeof response !== 'object' || response === null) return false;
+    const r = response as Record<string, unknown>;
+    if (!Array.isArray(r['items'])) return false;
+    if (typeof r['total_count'] !== 'number') return false;
+    return true;
   }
 
   private mapError(error: HttpErrorResponse): AppError {
+    // status 0 = network failure, CORS error, or no connection
     if (error.status === 0) {
-      // status 0 = network failure / CORS / no connection
       return APP_ERRORS.network();
     }
     if (error.status === 429) {
       return APP_ERRORS.rateLimit();
     }
     if (error.status === 403) {
-      // GitHub returns 403 when the unauthenticated rate limit is exhausted
+      // GitHub returns 403 for rate-limit exhaustion on unauthenticated requests.
+      // Check the message to distinguish it from a genuine 403 auth/permission error.
       const isRateLimit =
         typeof error.error === 'object' &&
         error.error !== null &&
         'message' in error.error &&
-        String(error.error['message']).toLowerCase().includes('rate limit');
+        String((error.error as Record<string, unknown>)['message'])
+          .toLowerCase()
+          .includes('rate limit');
 
       return isRateLimit ? APP_ERRORS.rateLimitForbidden() : APP_ERRORS.unknown(403);
     }

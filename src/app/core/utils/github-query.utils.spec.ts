@@ -2,18 +2,25 @@ import { describe, it, expect } from 'vitest';
 import { formatDateForGithub, daysAgo, buildCreatedAfterQuery } from './github-query.utils';
 
 describe('formatDateForGithub', () => {
-  it('formats a date as YYYY-MM-DD', () => {
-    expect(formatDateForGithub(new Date('2024-03-05T10:00:00Z'))).toBe('2024-03-05');
+  it('formats a date as YYYY-MM-DD using UTC', () => {
+    // Use a UTC timestamp to avoid local timezone influence on the assertion
+    expect(formatDateForGithub(new Date('2024-03-05T00:00:00Z'))).toBe('2024-03-05');
   });
 
   it('zero-pads single-digit months and days', () => {
     expect(formatDateForGithub(new Date('2024-01-09T00:00:00Z'))).toBe('2024-01-09');
   });
+
+  it('uses UTC date components, not local', () => {
+    // A timestamp that is still March 4 in UTC but could be March 5 in UTC+x
+    const date = new Date('2024-03-05T00:30:00Z');
+    expect(formatDateForGithub(date)).toBe('2024-03-05');
+  });
 });
 
 describe('daysAgo', () => {
-  it('returns a date exactly N days before the reference', () => {
-    const ref = new Date('2024-03-15T12:00:00Z');
+  it('returns a date exactly N days before the reference using UTC', () => {
+    const ref = new Date('2024-03-15T00:00:00Z');
     const result = daysAgo(30, ref);
     expect(formatDateForGithub(result)).toBe('2024-02-14');
   });
@@ -39,8 +46,6 @@ describe('buildCreatedAfterQuery', () => {
 
   it('produces a different query for different day ranges', () => {
     const ref = new Date('2024-03-15T00:00:00Z');
-    const q7 = buildCreatedAfterQuery(7, ref);
-    const q30 = buildCreatedAfterQuery(30, ref);
-    expect(q7).not.toBe(q30);
+    expect(buildCreatedAfterQuery(7, ref)).not.toBe(buildCreatedAfterQuery(30, ref));
   });
 });

@@ -1,25 +1,29 @@
 /**
  * Utilities for building GitHub Search API query parameters.
  * Pure functions — injectable nowhere, testable everywhere.
+ *
+ * Date arithmetic uses UTC throughout to avoid timezone-dependent
+ * off-by-one-day bugs when running across different environments or near midnight.
  */
 
 /**
- * Formats a Date as YYYY-MM-DD (GitHub API date format).
+ * Formats a Date as YYYY-MM-DD using UTC values (GitHub API date format).
  */
 export function formatDateForGithub(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
 /**
- * Computes the date N days before a given reference date.
- * Defaults to today if no reference is provided.
+ * Computes the date N days before a given reference date using UTC arithmetic.
+ * Defaults to the current UTC time if no reference is provided.
  */
 export function daysAgo(days: number, from: Date = new Date()): Date {
-  const result = new Date(from);
-  result.setDate(result.getDate() - days);
+  // Operate on UTC midnight to guarantee consistent day boundaries
+  const result = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate()));
+  result.setUTCDate(result.getUTCDate() - days);
   return result;
 }
 

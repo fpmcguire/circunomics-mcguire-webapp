@@ -3,11 +3,7 @@
 ## Overview
 
 This app uses a **feature-driven, layered architecture** — organized by feature first, then by
-technical concern within each feature. This is the right choice for a focused Angular SaaS app:
-it keeps related logic co-located, makes each feature self-contained, and scales cleanly without
-the ceremony of full enterprise DDD.
-
-The architecture is deliberately pragmatic. It applies enough structure to be maintainable and
+technical concern within each feature. It applies enough structure to be maintainable and
 testable without over-engineering a single-feature application.
 
 ---
@@ -16,46 +12,60 @@ testable without over-engineering a single-feature application.
 
 ```
 src/
+├── environments/
+│   ├── environment.ts               # Dev config (token placeholder — do not commit real tokens)
+│   └── environment.prod.ts          # Prod config (token via deployment secrets)
+│
 ├── styles/                          # Global SCSS design system
-│   ├── _tokens.scss                 # CSS custom properties (colors, spacing, typography)
+│   ├── _tokens.scss                 # CSS custom properties (colors, spacing, typography, shadows)
 │   ├── _reset.scss                  # Base reset + :focus-visible keyboard ring
 │   ├── _typography.scss             # Text utility classes
-│   └── _utilities.scss              # sr-only, skeleton, badge, icon-btn
-│
-├── environments/
-│   ├── environment.ts               # Development config (GitHub token placeholder)
-│   └── environment.prod.ts          # Production config (token via deployment secrets)
+│   └── _utilities.scss              # .sr-only, .skeleton, .badge, .icon-btn
 │
 └── app/
     ├── core/                        # App-wide singleton concerns
-    │   ├── config/                  # App-level constants and configuration objects
-    │   ├── utils/                   # Pure utility functions (date builders, formatters)
-    │   └── services/                # App-scoped services (e.g. HTTP interceptors)
+    │   ├── config/                  # App-level constants (reserved)
+    │   ├── services/
+    │   │   └── github-auth.interceptor.ts    # Optional Bearer token for api.github.com
+    │   └── utils/
+    │       └── github-query.utils.ts         # UTC date/query builder (pure functions)
     │
     ├── shared/                      # Reusable, feature-agnostic building blocks
-    │   ├── ui/                      # Shared presentational components (header, etc.)
-    │   ├── models/                  # Shared interfaces not owned by a single feature
-    │   ├── pipes/                   # Shared Angular pipes
-    │   └── directives/              # Shared Angular directives (e.g. intersection observer)
+    │   ├── models/
+    │   │   └── app-error.model.ts            # Typed AppError union + factory functions
+    │   ├── ui/
+    │   │   └── header/                       # Sticky header — router-aware nav, accessible
+    │   ├── directives/              # Shared Angular directives (reserved)
+    │   └── pipes/                   # Shared Angular pipes (reserved)
     │
     └── features/
         └── trending-repos/          # The single feature of this app
-            ├── domain/              # Pure business logic — no framework dependencies
-            │   ├── models/          # GithubRepo, GithubRepoOwner interfaces
-            │   └── mappers/         # Raw API → domain model mapping functions
             │
-            ├── application/         # Orchestration layer — coordinates domain + infra
-            │   ├── facades/         # TrendingReposFacade — signal-based state + actions
-            │   └── state/           # Supporting state types and helpers
+            ├── domain/              # Pure business logic — zero framework dependencies
+            │   ├── models/
+            │   │   └── github-repo.model.ts       # GithubRepo + GithubRepoOwner interfaces
+            │   ├── mappers/
+            │   │   └── github-repo.mapper.ts       # Raw API → domain model (pure functions)
+            │   └── repositories/
+            │       └── trending-repos.repository.ts  # Abstract contract (Angular DI token)
             │
-            ├── infrastructure/      # External data concerns — API, storage
-            │   ├── repositories/    # Abstract repository interface + implementation
-            │   └── datasources/     # GitHub API HTTP calls, localStorage persistence
+            ├── infrastructure/      # External data — GitHub API and localStorage
+            │   ├── datasources/
+            │   │   └── github-api.types.ts        # Raw API response shapes (infra-only)
+            │   └── repositories/
+            │       └── github-trending-repos.repository.ts  # HttpClient implementation
+            │
+            ├── application/         # Orchestration — coordinates domain + infra
+            │   ├── facades/
+            │   │   └── trending-repos.facade.ts   # (Step 4) Signal-based state + actions
+            │   └── state/
+            │       └── trending-repos.state.ts    # (Step 4) Supporting state types
             │
             └── ui/                  # Presentation layer — Angular components only
-                ├── pages/           # Routable top-level page components
-                ├── components/      # Reusable feature components (card, list, rating)
-                └── dialogs/         # CDK Dialog modal components
+                ├── pages/
+                │   └── trending-repos-page/       # Routable page — injects facade
+                ├── components/                    # (Steps 5–6) RepoList, RepoCard, StarRating
+                └── dialogs/                       # (Step 6) RepoDetailsDialog via CDK
 ```
 
 ---
@@ -64,92 +74,106 @@ src/
 
 ### Domain layer
 
-The domain layer contains pure TypeScript — no Angular, no RxJS, no HTTP. It defines what the
-app *knows about*, not how it fetches or displays it.
+Pure TypeScript — no Angular, no RxJS, no HTTP. Defines what the app *knows about*.
 
 **What lives here:**
-- `GithubRepo` and `GithubRepoOwner` interfaces — the app's internal representation of a repo
-- Mapper functions that translate raw GitHub API JSON into domain models
+- `GithubRepo` and `GithubRepoOwner` — the app's internal, framework-free data model
+- `mapApiRepo()` / `mapApiOwner()` — pure functions that translate raw GitHub JSON to domain models
+- `TrendingReposRepository` — the **abstract contract** that defines what the app needs from a data source
+
+**The contract lives in domain, not infrastructure.** This is a deliberate layering decision:
+infrastructure *implements* the contract, but the rest of the app only imports from domain.
+If the data source ever changes, only the infrastructure implementation changes.
 
 **Why keep it pure:**
-- Trivially unit-testable with no setup
-- Completely decoupled from the API shape — if GitHub changes a field name, only the mapper changes
-- Readable by anyone regardless of Angular knowledge
-
-```
-GitHub API JSON  →  mapper()  →  GithubRepo  →  rest of the app
-```
+- Trivially unit-testable with no Angular TestBed setup
+- Readable regardless of Angular knowledge
+- Decoupled from API shape changes — only the mapper needs updating when GitHub changes a field
 
 ---
 
 ### Infrastructure layer
 
-The infrastructure layer is responsible for talking to the outside world — the GitHub API and
-`localStorage`. It implements the repository interface defined by the domain.
+Responsible for talking to the outside world. Implements the domain contract.
 
 **What lives here:**
-- `TrendingReposRepository` — abstract interface (the contract)
-- `GithubTrendingReposRepository` — `HttpClient` implementation of that contract
-- Rate-limit and network error handling — mapped to typed domain errors here, not in the facade
-- Duplicate request guard — prevents concurrent fetches at the data layer
-- `RatingPersistenceService` — localStorage read/write, keyed by repo ID
+- `GithubApiSearchResponse` / `GithubApiRepo` — raw API types, never exported outside infra
+- `GithubTrendingReposRepository` — the `HttpClient` implementation of `TrendingReposRepository`
 
-**Why abstract behind an interface:**
-- The facade depends on the interface, not the implementation
-- Tests swap in a mock repository with zero HTTP involvement
-- If the data source ever changes (e.g. a backend proxy), only the implementation changes
+**Implementation details:**
+- Duplicate concurrent request guard via an `inFlight` Map and `shareReplay`
+- Cache cleanup via `finalize()` inside the pipe — not a separate internal subscription
+- Explicit response-shape validation before mapping (guards against degraded API responses)
+- Typed error mapping: `status 0` → network, `429` → rateLimit, `403 + rate-limit message` → rateLimit, everything else → unknown
+- Empty results (`items: []`) returned as a valid `TrendingReposPage` with `isLastPage: true` — not an error
 
 ---
 
 ### Application layer (facade)
 
-The facade is the single orchestration point between infrastructure and UI. Components never call
-the repository directly.
+*(Implemented in Step 4)*
 
-**What lives here:**
-- `TrendingReposFacade` — exposes signals consumed by components
-- Pagination state — current page, has-more flag, append logic
-- Error state — typed (network | rateLimit | unknown) with retry action
-- Rating state — in-memory signal map + delegated to persistence service
+The single orchestration point between infrastructure and UI. Components never call the
+repository directly.
 
-**Why a facade instead of a service-per-concern:**
-- One place to look for all feature state
-- Components stay thin and dumb
-- Easy to test the full load→paginate→rate→persist flow in a single integration test
-- Signals make derived state (e.g. `isEmpty = repos.length === 0 && !isLoading`) readable inline
-
-**Signal shape:**
+**Will expose signals:**
 ```typescript
 repos:          Signal<GithubRepo[]>
 isLoading:      Signal<boolean>       // initial page load
 isLoadingMore:  Signal<boolean>       // page 2+ loads
 error:          Signal<AppError | null>
 hasMore:        Signal<boolean>
-ratings:        Signal<Record<number, number>>  // repoId → 1–5
+ratings:        Signal<Record<number, number>>  // repoId → 1–5 stars
 ```
+
+**Why a facade over multiple services:**
+- One place to look for all feature state
+- Components stay thin — no repository or storage logic
+- The entire load → paginate → rate → persist flow is testable in one integration test
+- Signals make derived state (`isEmpty`, `canLoadMore`) readable inline with `computed()`
 
 ---
 
 ### UI / Presentation layer
 
-Components are purely presentational where possible. They receive data via inputs or inject the
-facade directly (page-level components only).
+*(Implemented in Steps 5–6)*
 
-**Component hierarchy:**
+**Planned component hierarchy:**
 ```
-TrendingReposPageComponent        ← injects facade, owns layout
-  └── RepoListComponent           ← @Input: repos, isLoading, error
-        └── RepoCardComponent     ← @Input: repo, rating — emits nameClick
-  └── IntersectionObserverDirective  ← sentinel for infinite scroll
-  └── RepoDetailsDialogComponent  ← opened via CDK Dialog, injects facade for rating
-        └── StarRatingComponent   ← radio-group pattern, fully keyboard accessible
+TrendingReposPageComponent          ← injects facade, owns layout
+  └── RepoListComponent             ← @Input: repos, isLoading, error
+        └── RepoCardComponent       ← @Input: repo, rating — emits nameClick
+  └── IntersectionObserverDirective ← sentinel for infinite scroll
+  └── RepoDetailsDialogComponent    ← opened via CDK Dialog, injects facade for rating
+        └── StarRatingComponent     ← radio-group pattern, fully keyboard accessible
 ```
 
-**Rules for components:**
-- Page components may inject the facade
-- Sub-components are input/output only — no service injection
-- No business logic in templates — computed values belong in the component class or facade
+**Component rules:**
+- Page-level components may inject the facade
+- Sub-components are `@Input`/`@Output` only — no direct service injection
+- No business logic in templates — computed values live in the component class or facade
 - All components use `ChangeDetectionStrategy.OnPush`
+- All `data-testid` attributes applied at build time, not retrofitted
+
+---
+
+## Data flow
+
+```
+GitHub API
+    ↓  HTTP + Bearer token (optional)
+GithubTrendingReposRepository
+    ↓  Observable<TrendingReposPage>  (via abstract TrendingReposRepository)
+TrendingReposFacade
+    ↓  Signal<GithubRepo[]>, Signal<boolean>, Signal<AppError | null> ...
+TrendingReposPageComponent
+    ↓  @Input bindings
+RepoListComponent → RepoCardComponent
+                         ↓  (click)
+              RepoDetailsDialogComponent
+                         ↓  rating change
+              TrendingReposFacade → RatingPersistenceService → localStorage
+```
 
 ---
 
@@ -157,68 +181,80 @@ TrendingReposPageComponent        ← injects facade, owns layout
 
 **Choice: Angular signals — no NgRx, no BehaviorSubjects**
 
-For a single-feature app, signals are the correct tool:
-
-| Concern | How it's handled |
+| Concern | Signals approach |
 |---|---|
-| Server data | Fetched by facade, stored in a `signal<GithubRepo[]>` |
-| Pagination | `currentPage` signal, incremented by facade action |
-| Loading states | Separate `isLoading` / `isLoadingMore` signals |
-| Error state | Typed `signal<AppError \| null>` |
+| Server data | `signal<GithubRepo[]>` — set by facade after each page fetch |
+| Pagination | `signal<number>` currentPage, incremented by facade action |
+| Initial load | `signal<boolean>` isLoading |
+| Subsequent pages | `signal<boolean>` isLoadingMore |
+| Error state | `signal<AppError \| null>` — typed, resettable |
 | Ratings | `signal<Record<number, number>>` + localStorage sync |
-| Derived state | `computed()` — e.g. `isEmpty`, `canLoadMore` |
+| Derived state | `computed()` — `isEmpty`, `canLoadMore`, etc. |
 
-NgRx would add significant boilerplate (actions, reducers, effects, selectors) with no benefit
-at this scale. A signal-based facade gives the same unidirectional data flow with far less ceremony.
+NgRx would add actions, reducers, effects, and selectors with no benefit at this scale.
+
+---
+
+## Error handling
+
+Errors are typed at the infrastructure boundary and propagated upward as `AppError`:
+
+| HTTP status | Mapped to |
+|---|---|
+| `0` (no connection / CORS) | `kind: 'network'` |
+| `429` | `kind: 'rateLimit'` |
+| `403` + rate-limit message | `kind: 'rateLimit'` |
+| `403` without rate-limit message | `kind: 'unknown'` |
+| Any other status | `kind: 'unknown'` |
+| Malformed response shape | `kind: 'unknown'` (shape guard fires before mapping) |
+| Empty result set | Not an error — valid `TrendingReposPage` with `isLastPage: true` |
+
+The facade translates `AppError` into user-facing UI state. Components never inspect raw HTTP errors.
 
 ---
 
 ## Routing
 
-Single lazy-loaded route — the entire `trending-repos` feature is one chunk:
+Single lazy-loaded route — the entire `trending-repos` feature is one bundle chunk:
 
 ```typescript
-{
-  path: '',
-  loadComponent: () => import('./features/trending-repos/ui/pages/...')
-}
+{ path: '', loadComponent: () => import('./features/trending-repos/ui/pages/...') }
 ```
 
-This keeps the initial bundle small. All feature code is deferred until the route activates.
+Keeps the initial bundle small. All feature code deferred until route activates.
 
 ---
 
-## Accessibility architecture
+## Accessibility
 
-Accessibility is a structural concern, not a feature bolt-on.
+Accessibility is a structural concern, built in from the start — not a retrofit.
 
 | Concern | Approach |
 |---|---|
-| Modal | CDK Dialog — focus trap, Escape, `aria-modal`, `aria-labelledby` |
-| Star rating | Radio group — keyboard navigable, screen-reader labelled |
-| Infinite scroll | Sentinel `<div aria-hidden="true">` — not announced to screen readers |
-| Loading states | `aria-live="polite"` region for loading/error announcements |
-| Skip link | First focusable element in `index.html` — jumps to `#main-content` |
-| Focus ring | `:focus-visible` in global reset — always visible, never suppressed for mouse |
-| Reduced motion | `@media (prefers-reduced-motion: reduce)` respected in skeleton and transitions |
+| Modal | CDK Dialog — focus trap, Escape key, `aria-modal="true"`, `aria-labelledby` |
+| Star rating | Radio group — fully keyboard navigable, screen-reader labelled |
+| Infinite scroll sentinel | `aria-hidden="true"` — not announced to screen readers |
+| Loading/error announcements | `aria-live="polite"` region (Step 5) |
+| Skip link | First focusable element in `index.html` — targets `#main-content` |
+| Focus ring | `:focus-visible` in global reset — always shown for keyboard users |
+| Reduced motion | `@media (prefers-reduced-motion: reduce)` in skeleton + transitions |
+| Nav active state | `routerLinkActive` + `ariaCurrentWhenActive="page"` — router-driven, not hardcoded |
 
 ---
 
-## Testing architecture
+## Testing strategy
 
-The test suite follows the ~70 / 20 / 10 distribution recommended by the project brief:
+Distribution: ~70% integration · ~20% E2E · ~10% unit
 
-| Type | Share | What gets tested |
+| Type | Tool | What gets tested |
 |---|---|---|
-| Integration (Vitest) | ~70% | Facade flows, component rendering states, modal behavior, rating sync |
-| E2E (Playwright) | ~20% | 3–4 critical user paths only |
-| Unit (Vitest) | ~10% | Mapper, date builder, error mapping — genuinely complex pure logic only |
+| Integration | Vitest + `@testing-library/angular` | Facade flows, component states, modal, rating sync |
+| E2E | Playwright | 3–4 critical user paths only |
+| Unit | Vitest | Mapper, date builder, error mapping — genuinely complex pure logic only |
 
-**Key principles:**
-- Tests use `data-testid` selectors in kebab-case — never CSS classes or DOM structure
-- Integration tests use `@testing-library/angular` — test what the user sees, not implementation
-- No tests for trivial getters, setters, or obvious framework behavior
-- The facade is the primary integration test target — it owns all interesting logic
+**Selector strategy:** `data-testid` in kebab-case throughout — never CSS classes or DOM structure.
+Tests use `@testing-library/angular` to test what users see, not implementation details.
+No tests for trivial getters, setters, or Angular framework behavior.
 
 ---
 
@@ -226,20 +262,21 @@ The test suite follows the ~70 / 20 / 10 distribution recommended by the project
 
 | Concern | Decision |
 |---|---|
-| GitHub token | Never hardcoded — injectable via gitignored local env file or deployment secrets |
-| localStorage | Stores only `{ [repoId]: starRating }` — minimal, no PII |
-| External data | All data comes from the public GitHub API — no user data is collected or transmitted |
-| Font loading | Google Fonts loaded at runtime — self-host in production for stricter privacy |
+| GitHub token | Never hardcoded. Local gitignored file or deployment secrets only. |
+| Token transmission | Bearer header to `api.github.com` only. Never stored, never logged. |
+| `localStorage` | `{ [repoId]: starRating }` only — no PII, minimal footprint |
+| External data | Public GitHub API only — no user data collected or transmitted |
+| Font loading | Google Fonts at runtime — self-host in production for privacy + performance |
 
 ---
 
 ## Key tradeoffs
 
-| Decision | Tradeoff accepted |
+| Decision | Tradeoff |
 |---|---|
-| Signals over NgRx | Less infrastructure ceremony; would need NgRx if app grew to many features with shared state |
-| Single facade | Slightly larger class than pure SRP would suggest; justified by test simplicity |
-| CDK Dialog over custom modal | More opinionated API; accessibility correctness is worth it |
-| No backend proxy | Exposes rate limiting to unauthenticated users; token env var mitigates for authenticated use |
-| Lazy route per feature | One chunk is fine now; would split further if more features were added |
-| Inter via Google Fonts | Convenient for development; should be self-hosted in production for privacy and performance |
+| Signals over NgRx | Less ceremony; would need NgRx if app grew to multi-feature shared state |
+| Single facade | Slightly larger class than pure SRP; justified by test simplicity and readability |
+| CDK Dialog | More opinionated API; accessibility correctness is worth it |
+| No backend proxy | Exposes rate limiting to unauthenticated users; token env var mitigates |
+| `localStorage` for ratings | Simple, no server dep; ratings lost on browser data clear |
+| Inter via Google Fonts | Dev convenience; should self-host in production |

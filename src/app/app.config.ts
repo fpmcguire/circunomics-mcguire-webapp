@@ -5,7 +5,7 @@ import { provideAnimationsAsync } from '@angular/platform-browser/animations/asy
 
 import { routes } from './app.routes';
 import { githubAuthInterceptor } from './core/services/github-auth.interceptor';
-import { TrendingReposRepository } from './features/trending-repos/infrastructure/repositories/trending-repos.repository';
+import { TrendingReposRepository } from './features/trending-repos/domain/repositories/trending-repos.repository';
 import { GithubTrendingReposRepository } from './features/trending-repos/infrastructure/repositories/github-trending-repos.repository';
 
 export const appConfig: ApplicationConfig = {
