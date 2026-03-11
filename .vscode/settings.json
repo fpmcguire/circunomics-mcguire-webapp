@@ -1,5 +1,5 @@
 {
-  "conventionalCommits.scopes": ["app"],
+  "conventionalCommits.scopes": ["app", "ui"],
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },

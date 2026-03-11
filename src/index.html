@@ -1,50 +1,49 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>Trending Repos – Circunomics</title>
-    <base href="/" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta
-      name="description"
-      content="Discover the most-starred GitHub repositories created in the last 30 days."
-    />
 
-    <!-- Inter font via Google Fonts — self-host in production for better privacy -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+<head>
+  <meta charset="utf-8" />
+  <title>Trending Repos – Circunomics</title>
+  <base href="/" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Discover the most-starred GitHub repositories created in the last 30 days." />
 
-    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <!-- Inter font via Google Fonts — self-host in production for better privacy -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-    <!-- Skip-to-content link — must be first focusable element -->
-    <style>
-      .skip-link {
-        position: absolute;
-        top: -9999px;
-        left: var(--space-4, 1rem);
-        z-index: 9999;
-        padding: 0.5rem 1rem;
-        background: var(--color-primary, #2563eb);
-        color: #fff;
-        border-radius: 0 0 0.375rem 0.375rem;
-        font-weight: 600;
-        font-size: 0.875rem;
-        text-decoration: none;
-        transition: top 0.1s;
-      }
-      .skip-link:focus {
-        top: 0;
-        outline: 2px solid #fff;
-        outline-offset: 2px;
-      }
-    </style>
-  </head>
-  <body>
-    <a class="skip-link" href="#main-content">Skip to main content</a>
-    <app-root></app-root>
-  </body>
+  <link rel="icon" type="image/x-icon"
+    href="https://cdn.prod.website-files.com/688b492d42abb4e5c9cb96f8/69427d63e5589c72842f63d7_Favicon%2032x32.png" />
+
+  <!-- Skip-to-content link — must be first focusable element -->
+  <style>
+    .skip-link {
+      position: absolute;
+      top: -9999px;
+      left: var(--space-4, 1rem);
+      z-index: 9999;
+      padding: 0.5rem 1rem;
+      background: var(--color-primary, #2563eb);
+      color: #fff;
+      border-radius: 0 0 0.375rem 0.375rem;
+      font-weight: 600;
+      font-size: 0.875rem;
+      text-decoration: none;
+      transition: top 0.1s;
+    }
+
+    .skip-link:focus {
+      top: 0;
+      outline: 2px solid #fff;
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <app-root></app-root>
+</body>
+
 </html>

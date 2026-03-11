@@ -5,33 +5,27 @@
     </h1>
     <p class="repos-page__subtitle">Most starred open-source projects from the last 30 days</p>
     @if (!facade.isLoading() && facade.totalCount() > 0) {
-      <p class="repos-page__count" aria-live="polite">
-        {{ facade.totalCount().toLocaleString() }} repositories found
-      </p>
+    <p class="repos-page__count" aria-live="polite">
+      {{ facade.totalCount().toLocaleString() }} repositories found
+    </p>
     }
   </header>
 
-  <app-repo-list
-    [repos]="facade.visibleRepos()"
-    [isLoading]="facade.isLoading()"
-    [error]="facade.error()"
-    [isEmpty]="facade.isEmpty()"
-    [ratings]="facade.ratings()"
-    (retryClick)="facade.retry()"
-    (nameClick)="onNameClick($event)"
-  />
+  @if (!facade.isLoading() && !facade.error() && facade.totalLoaded() > 0) {
+  <app-repo-pagination [currentPage]="facade.visiblePage()" [canGoPrevious]="facade.canGoPrevious()"
+    [canGoNext]="facade.canGoNext()" [isLoadingMore]="facade.isLoadingMore()" [rangeStart]="facade.visibleRangeStart()"
+    [rangeEnd]="facade.visibleRangeEnd()" [totalLoaded]="facade.totalLoaded()"
+    (previousClick)="facade.goToPreviousPage()" (nextClick)="facade.goToNextPage()" />
+  }
+
+  <app-repo-list [repos]="facade.visibleRepos()" [isLoading]="facade.isLoading()" [error]="facade.error()"
+    [isEmpty]="facade.isEmpty()" [ratings]="facade.ratings()" (retryClick)="facade.retry()"
+    (nameClick)="onNameClick($event)" />
 
   @if (!facade.isLoading() && !facade.error() && facade.totalLoaded() > 0) {
-    <app-repo-pagination
-      [currentPage]="facade.visiblePage()"
-      [canGoPrevious]="facade.canGoPrevious()"
-      [canGoNext]="facade.canGoNext()"
-      [isLoadingMore]="facade.isLoadingMore()"
-      [rangeStart]="facade.visibleRangeStart()"
-      [rangeEnd]="facade.visibleRangeEnd()"
-      [totalLoaded]="facade.totalLoaded()"
-      (previousClick)="facade.goToPreviousPage()"
-      (nextClick)="facade.goToNextPage()"
-    />
+  <app-repo-pagination [currentPage]="facade.visiblePage()" [canGoPrevious]="facade.canGoPrevious()"
+    [canGoNext]="facade.canGoNext()" [isLoadingMore]="facade.isLoadingMore()" [rangeStart]="facade.visibleRangeStart()"
+    [rangeEnd]="facade.visibleRangeEnd()" [totalLoaded]="facade.totalLoaded()"
+    (previousClick)="facade.goToPreviousPage()" (nextClick)="facade.goToNextPage()" />
   }
 </div>
