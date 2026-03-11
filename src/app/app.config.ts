@@ -7,8 +7,6 @@ import { routes } from './app.routes';
 import { githubAuthInterceptor } from './core/services/github-auth.interceptor';
 import { TrendingReposRepository } from './features/trending-repos/domain/repositories/trending-repos.repository';
 import { GithubTrendingReposRepository } from './features/trending-repos/infrastructure/repositories/github-trending-repos.repository';
-import { TrendingReposFacade } from './features/trending-repos/application/facades/trending-repos.facade';
-
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -18,8 +16,7 @@ export const appConfig: ApplicationConfig = {
     // Bind abstract repository token to GitHub implementation.
     // Swap with a mock provider in tests.
     { provide: TrendingReposRepository, useClass: GithubTrendingReposRepository },
-    // Facade is feature-scoped — not providedIn: 'root'.
-    // Providing here makes it available app-wide for this single-feature app.
-    TrendingReposFacade,
+    // TrendingReposFacade is provided in TrendingReposPageComponent so its
+    // lifecycle is scoped to the feature page, not the application root.
   ],
 };

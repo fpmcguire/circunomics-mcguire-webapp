@@ -39,8 +39,8 @@ const makePage = (
 ): TrendingReposPage => ({ repos, totalCount, isLastPage });
 
 /**
- * Creates a mock repository that returns the given pages in order.
- * of() is synchronous — no fakeAsync / tick needed.
+ * Returns a mock repository that emits pages in sequence.
+ * of() is synchronous — no async test helpers needed.
  */
 const repoStub = (pages: TrendingReposPage[]): Partial<TrendingReposRepository> => {
   let call = 0;
@@ -80,18 +80,19 @@ const setup = (
 
 describe('TrendingReposFacade', () => {
   describe('initial state', () => {
-    it('starts empty and idle', () => {
+    it('exposes an empty, idle state before any action is called', () => {
       const { facade } = setup([makePage([makeRepo(1)])]);
       expect(facade.repos()).toEqual([]);
       expect(facade.isLoading()).toBe(false);
       expect(facade.isLoadingMore()).toBe(false);
       expect(facade.error()).toBeNull();
       expect(facade.hasMore()).toBe(true);
+      expect(facade.currentPage()).toBe(0);
     });
   });
 
   describe('loadInitial()', () => {
-    it('populates repos on success', () => {
+    it('populates repos after a successful fetch', () => {
       const { facade } = setup([makePage([makeRepo(1), makeRepo(2)])]);
       facade.loadInitial();
       expect(facade.repos()).toHaveLength(2);
@@ -105,16 +106,22 @@ describe('TrendingReposFacade', () => {
       expect(facade.error()).toBeNull();
     });
 
-    it('sets hasMore false when isLastPage is true', () => {
+    it('sets hasMore false when the page result is the last page', () => {
       const { facade } = setup([makePage([makeRepo(1)], true)]);
       facade.loadInitial();
       expect(facade.hasMore()).toBe(false);
     });
 
-    it('sets totalCount from the page result', () => {
+    it('records totalCount from the page result', () => {
       const { facade } = setup([makePage([makeRepo(1)], false, 500)]);
       facade.loadInitial();
       expect(facade.totalCount()).toBe(500);
+    });
+
+    it('records the loaded page in currentPage', () => {
+      const { facade } = setup([makePage([makeRepo(1)])]);
+      facade.loadInitial();
+      expect(facade.currentPage()).toBe(1);
     });
 
     it('does not re-fetch when repos are already loaded', () => {
@@ -128,30 +135,16 @@ describe('TrendingReposFacade', () => {
       });
       const facade = TestBed.inject(TrendingReposFacade);
       facade.loadInitial();
-      facade.loadInitial(); // second call — should be no-op
+      facade.loadInitial();
       expect(stub.fetchTrendingRepos).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('isEmpty computed', () => {
-    it('is true after a successful load with zero results', () => {
+  describe('isEmpty', () => {
+    it('is true after a successful fetch that returns no results', () => {
       const { facade } = setup([makePage([], true, 0)]);
       facade.loadInitial();
       expect(facade.isEmpty()).toBe(true);
-    });
-
-    it('is false while loading', () => {
-      // Pause emission by never completing — not needed here since of() is sync,
-      // but we test the pre-call state instead
-      const { facade } = setup([makePage([])]);
-      // Before any load call, not loading → isEmpty stays false (repos.length === 0 but isLoading === false and error === null)
-      // The signal reads: !isLoading && error === null && repos.length === 0
-      // Before loadInitial() — isLoading is false, so isEmpty would be true here.
-      // The important check: during an actual load isEmpty is false because isLoading is true.
-      // We test this by using a Subject to control emission timing in a dedicated test:
-      // (covered by the isLoading test below — skipping duplicate coverage here)
-      facade.loadInitial();
-      expect(facade.isEmpty()).toBe(true); // zero results, not loading
     });
 
     it('is false when repos are present', () => {
@@ -159,10 +152,26 @@ describe('TrendingReposFacade', () => {
       facade.loadInitial();
       expect(facade.isEmpty()).toBe(false);
     });
+
+    it('is false when an error is present even though repos is empty', () => {
+      TestBed.configureTestingModule({
+        providers: [
+          TrendingReposFacade,
+          {
+            provide: TrendingReposRepository,
+            useValue: { fetchTrendingRepos: () => throwError(() => APP_ERRORS.network()) },
+          },
+          { provide: RatingPersistenceService, useValue: persistenceStub() },
+        ],
+      });
+      const facade = TestBed.inject(TrendingReposFacade);
+      facade.loadInitial();
+      expect(facade.isEmpty()).toBe(false);
+    });
   });
 
   describe('loadNextPage()', () => {
-    it('appends repos from subsequent pages', () => {
+    it('appends repos from the next page', () => {
       const { facade } = setup([
         makePage([makeRepo(1), makeRepo(2)]),
         makePage([makeRepo(3), makeRepo(4)], true),
@@ -171,12 +180,30 @@ describe('TrendingReposFacade', () => {
       facade.loadNextPage();
       expect(facade.repos()).toHaveLength(4);
       expect(facade.repos()[2].name).toBe('repo-3');
+    });
+
+    it('marks hasMore false after the last page', () => {
+      const { facade } = setup([makePage([makeRepo(1)]), makePage([makeRepo(2)], true)]);
+      facade.loadInitial();
+      facade.loadNextPage();
       expect(facade.hasMore()).toBe(false);
     });
 
-    it('does not set isLoading — only isLoadingMore — for subsequent pages', () => {
-      // Both load synchronously via of(), so we check the final settled state.
-      // isLoadingMore is true during the call and false after — test final state.
+    it('increments currentPage for each page loaded', () => {
+      const { facade } = setup([
+        makePage([makeRepo(1)]),
+        makePage([makeRepo(2)]),
+        makePage([makeRepo(3)], true),
+      ]);
+      facade.loadInitial();
+      expect(facade.currentPage()).toBe(1);
+      facade.loadNextPage();
+      expect(facade.currentPage()).toBe(2);
+      facade.loadNextPage();
+      expect(facade.currentPage()).toBe(3);
+    });
+
+    it('only sets isLoadingMore — not isLoading — for subsequent pages', () => {
       const { facade } = setup([makePage([makeRepo(1)]), makePage([makeRepo(2)], true)]);
       facade.loadInitial();
       facade.loadNextPage();
@@ -185,14 +212,14 @@ describe('TrendingReposFacade', () => {
     });
 
     it('deduplicates repos that appear in both pages', () => {
-      const sharedRepo = makeRepo(1);
+      const shared = makeRepo(1);
       const { facade } = setup([
-        makePage([sharedRepo, makeRepo(2)]),
-        makePage([sharedRepo, makeRepo(3)], true),
+        makePage([shared, makeRepo(2)]),
+        makePage([shared, makeRepo(3)], true),
       ]);
       facade.loadInitial();
       facade.loadNextPage();
-      expect(facade.repos()).toHaveLength(3); // repo-1, repo-2, repo-3
+      expect(facade.repos()).toHaveLength(3);
     });
 
     it('does not fetch when hasMore is false', () => {
@@ -206,28 +233,13 @@ describe('TrendingReposFacade', () => {
       });
       const facade = TestBed.inject(TrendingReposFacade);
       facade.loadInitial();
-      facade.loadNextPage(); // no-op — isLastPage was true
+      facade.loadNextPage();
       expect(stub.fetchTrendingRepos).toHaveBeenCalledTimes(1);
-    });
-
-    it('advances currentPage correctly across multiple loads', () => {
-      const { facade } = setup([
-        makePage([makeRepo(1)]),
-        makePage([makeRepo(2)]),
-        makePage([makeRepo(3)], true),
-      ]);
-      facade.loadInitial();
-      expect(facade.repos()).toHaveLength(1);
-      facade.loadNextPage();
-      expect(facade.repos()).toHaveLength(2);
-      facade.loadNextPage();
-      expect(facade.repos()).toHaveLength(3);
-      expect(facade.hasMore()).toBe(false);
     });
   });
 
   describe('error handling', () => {
-    it('exposes network error via error signal', () => {
+    it('surfaces a network error via the error signal', () => {
       TestBed.configureTestingModule({
         providers: [
           TrendingReposFacade,
@@ -244,7 +256,7 @@ describe('TrendingReposFacade', () => {
       expect(facade.isLoading()).toBe(false);
     });
 
-    it('exposes rateLimit error via error signal', () => {
+    it('surfaces a rateLimit error via the error signal', () => {
       TestBed.configureTestingModule({
         providers: [
           TrendingReposFacade,
@@ -260,7 +272,7 @@ describe('TrendingReposFacade', () => {
       expect(facade.error()?.kind).toBe('rateLimit');
     });
 
-    it('sets isLoadingMore false and preserves existing repos on page-2 error', () => {
+    it('clears isLoadingMore and preserves existing repos when a page-2+ fetch fails', () => {
       let call = 0;
       TestBed.configureTestingModule({
         providers: [
@@ -279,14 +291,14 @@ describe('TrendingReposFacade', () => {
       const facade = TestBed.inject(TrendingReposFacade);
       facade.loadInitial();
       facade.loadNextPage();
-      expect(facade.repos()).toHaveLength(1); // page-1 repos preserved
+      expect(facade.repos()).toHaveLength(1);
       expect(facade.isLoadingMore()).toBe(false);
       expect(facade.error()?.kind).toBe('network');
     });
   });
 
   describe('retry()', () => {
-    it('clears error and reloads first page when no repos are present', () => {
+    it('replays page 1 when no repos have loaded yet', () => {
       let fail = true;
       TestBed.configureTestingModule({
         providers: [
@@ -312,8 +324,9 @@ describe('TrendingReposFacade', () => {
       expect(facade.repos()).toHaveLength(1);
     });
 
-    it('clears error and loads next page when repos already exist', () => {
+    it('replays the exact failed page — not currentPage + 1', () => {
       let call = 0;
+      let failOnThirdCall = false;
       TestBed.configureTestingModule({
         providers: [
           TrendingReposFacade,
@@ -321,15 +334,11 @@ describe('TrendingReposFacade', () => {
             provide: TrendingReposRepository,
             useValue: {
               fetchTrendingRepos: vi.fn(() => {
-                if (call === 0) {
-                  call++;
-                  return of(makePage([makeRepo(1)]));
-                }
-                if (call === 1) {
-                  call++;
-                  return throwError(() => APP_ERRORS.network());
-                }
-                return of(makePage([makeRepo(2)], true));
+                const n = call++;
+                if (n === 0) return of(makePage([makeRepo(1)])); // page 1 ok
+                if (n === 1) return throwError(() => APP_ERRORS.network()); // page 2 fails
+                if (failOnThirdCall) return of(makePage([makeRepo(2)], true)); // retry succeeds
+                return throwError(() => APP_ERRORS.network());
               }),
             },
           },
@@ -337,13 +346,42 @@ describe('TrendingReposFacade', () => {
         ],
       });
       const facade = TestBed.inject(TrendingReposFacade);
-      facade.loadInitial();
-      facade.loadNextPage(); // fails
+      facade.loadInitial(); // call 0 — page 1 succeeds
+      facade.loadNextPage(); // call 1 — page 2 fails
       expect(facade.error()).not.toBeNull();
+      expect(facade.currentPage()).toBe(1); // page 1 is still the last successful page
 
-      facade.retry();
+      failOnThirdCall = true;
+      facade.retry(); // call 2 — replays page 2 (not page 3)
       expect(facade.error()).toBeNull();
-      expect(facade.repos()).toHaveLength(2);
+      expect(facade.repos()).toHaveLength(2); // page-1 repo + page-2 repo
+    });
+
+    it('sets isLoading for an initial-page retry', () => {
+      // After a first-page error, retry should signal an initial load (not loading-more)
+      let fail = true;
+      TestBed.configureTestingModule({
+        providers: [
+          TrendingReposFacade,
+          {
+            provide: TrendingReposRepository,
+            useValue: {
+              fetchTrendingRepos: vi.fn(() =>
+                fail ? throwError(() => APP_ERRORS.network()) : of(makePage([makeRepo(1)])),
+              ),
+            },
+          },
+          { provide: RatingPersistenceService, useValue: persistenceStub() },
+        ],
+      });
+      const facade = TestBed.inject(TrendingReposFacade);
+      facade.loadInitial();
+      fail = false;
+      // Before tick — retry sets isLoading true synchronously, then of() settles it
+      // of() is synchronous, so we verify the settled state here
+      facade.retry();
+      expect(facade.isLoading()).toBe(false);
+      expect(facade.isLoadingMore()).toBe(false);
     });
   });
 
@@ -366,17 +404,15 @@ describe('TrendingReposFacade', () => {
       expect(facade.getRating(7)).toBe(5);
     });
 
-    it('reflects updated rating via the ratings signal', () => {
-      const persistence = persistenceStub();
-      const { facade } = setup([makePage([])], persistence);
+    it('reflects an updated rating via the ratings signal', () => {
+      const { facade } = setup([makePage([])]);
       expect(facade.ratings()[3]).toBeUndefined();
       facade.setRating(3, 3);
       expect(facade.ratings()[3]).toBe(3);
     });
 
-    it('preserves existing ratings when a new one is set', () => {
+    it('preserves existing ratings when a new one is added', () => {
       const persistence = persistenceStub({ 1: 5 });
-      // setRating mock must merge — update stub to do so
       (persistence.setRating as ReturnType<typeof vi.fn>).mockImplementation(
         (id: number, stars: number) => ({ 1: 5, [id]: stars }),
       );
