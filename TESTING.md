@@ -123,10 +123,14 @@ data-testid="{feature}-{component}-{element}-{modifier?}"
 | Card name button | `trending-repos-list-item-name-button` |
 | Card rating display | `trending-repos-list-item-rating` |
 | Loading skeleton | `trending-repos-loading` |
-| Loading more spinner | `trending-repos-loading-more` |
 | Error panel | `trending-repos-error` |
 | Retry button | `trending-repos-error-retry` |
 | Empty state | `trending-repos-empty` |
+| Pagination nav | `trending-repos-pagination` |
+| Previous page button | `trending-repos-pagination-prev-button` |
+| Next page button | `trending-repos-pagination-next-button` |
+| Page indicator | `trending-repos-pagination-page-indicator` |
+| Range indicator | `trending-repos-pagination-range-indicator` |
 | Detail modal | `repo-details-modal` |
 | Modal close | `repo-details-modal-close-button` |
 | Modal repo name | `repo-details-modal-name` |

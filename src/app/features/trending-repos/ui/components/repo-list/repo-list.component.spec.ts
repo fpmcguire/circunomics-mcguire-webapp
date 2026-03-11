@@ -25,7 +25,6 @@ const makeRepo = (id: number): GithubRepo => ({
 interface ListInputs {
   repos: GithubRepo[];
   isLoading: boolean;
-  isLoadingMore: boolean;
   error: AppError | null;
   isEmpty: boolean;
   ratings: Record<number, number>;
@@ -34,7 +33,6 @@ interface ListInputs {
 const BASE_INPUTS: ListInputs = {
   repos: [],
   isLoading: false,
-  isLoadingMore: false,
   error: null,
   isEmpty: false,
   ratings: {},
@@ -143,19 +141,6 @@ describe('RepoListComponent', () => {
       await renderList({ error });
       const panel = screen.getByTestId('trending-repos-error');
       expect(panel).toHaveAttribute('role', 'alert');
-    });
-  });
-
-  describe('loading-more state', () => {
-    it('renders the loading-more indicator when isLoadingMore is true', async () => {
-      await renderList({ repos: [makeRepo(1)], isLoadingMore: true });
-      expect(screen.getByTestId('trending-repos-loading-more')).toBeInTheDocument();
-    });
-
-    it('announces to screen readers when loading more', async () => {
-      await renderList({ repos: [makeRepo(1)], isLoadingMore: true });
-      // The text appears in both the aria-live region and the spinner's sr-only span
-      expect(screen.getAllByText('Loading more repositories…').length).toBeGreaterThanOrEqual(1);
     });
   });
 

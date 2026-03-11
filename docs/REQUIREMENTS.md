@@ -22,6 +22,8 @@ This document is derived from the original `WebAppChallenge` brief.
    - owner avatar
 4. The user can keep scrolling and additional results appear via pagination.
 
+> **Implementation note — UI pagination (Step 5.5):** User story 4 in the original brief implies infinite scroll. The implemented solution instead uses **explicit previous/next pagination controls** showing 10 repositories per visible page. This is a deliberate product enhancement introduced at stakeholder request after Step 5 shipped. The underlying GitHub API is still fetched incrementally (new API pages are loaded only when the user navigates beyond what is already cached), so the data-loading behaviour described in the Data source requirements below is fully preserved. See `ROADMAP.md` Step 5.5 for full rationale and design decisions.
+
 ### Extra-credit user stories
 1. Clicking the repository name opens a modal window.
 2. The modal shows the same repository details listed above.

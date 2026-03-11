@@ -12,9 +12,8 @@
   </header>
 
   <app-repo-list
-    [repos]="facade.repos()"
+    [repos]="facade.visibleRepos()"
     [isLoading]="facade.isLoading()"
-    [isLoadingMore]="facade.isLoadingMore()"
     [error]="facade.error()"
     [isEmpty]="facade.isEmpty()"
     [ratings]="facade.ratings()"
@@ -22,14 +21,17 @@
     (nameClick)="onNameClick($event)"
   />
 
-  <!-- Infinite scroll sentinel — invisible, aria-hidden, triggers loadNextPage -->
-  @if (facade.hasMore() && !facade.error() && !facade.isLoading()) {
-    <div
-      class="repos-page__sentinel"
-      aria-hidden="true"
-      appIntersectionObserver
-      [disabled]="facade.isLoadingMore()"
-      (intersected)="onSentinelVisible()"
-    ></div>
+  @if (!facade.isLoading() && !facade.error() && facade.totalLoaded() > 0) {
+    <app-repo-pagination
+      [currentPage]="facade.visiblePage()"
+      [canGoPrevious]="facade.canGoPrevious()"
+      [canGoNext]="facade.canGoNext()"
+      [isLoadingMore]="facade.isLoadingMore()"
+      [rangeStart]="facade.visibleRangeStart()"
+      [rangeEnd]="facade.visibleRangeEnd()"
+      [totalLoaded]="facade.totalLoaded()"
+      (previousClick)="facade.goToPreviousPage()"
+      (nextClick)="facade.goToNextPage()"
+    />
   }
 </div>

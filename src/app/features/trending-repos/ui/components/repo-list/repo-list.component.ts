@@ -17,7 +17,6 @@ const SKELETON_COUNT = 6;
 export class RepoListComponent {
   @Input({ required: true }) repos: GithubRepo[] = [];
   @Input({ required: true }) isLoading = false;
-  @Input({ required: true }) isLoadingMore = false;
   @Input({ required: true }) error: AppError | null = null;
   @Input({ required: true }) isEmpty = false;
   @Input({ required: true }) ratings: RatingsMap = {};

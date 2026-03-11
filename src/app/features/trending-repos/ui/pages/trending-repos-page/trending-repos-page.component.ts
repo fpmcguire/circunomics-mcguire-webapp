@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/cor
 import { TrendingReposFacade } from '../../../application/facades/trending-repos.facade';
 import { GithubRepo } from '../../../domain/models/github-repo.model';
 import { RepoListComponent } from '../../components/repo-list/repo-list.component';
-import { IntersectionObserverDirective } from '../../../../../shared/directives/intersection-observer.directive';
+import { RepoPaginationComponent } from '../../components/repo-pagination/repo-pagination.component';
 
 @Component({
   selector: 'app-trending-repos-page',
@@ -10,7 +10,7 @@ import { IntersectionObserverDirective } from '../../../../../shared/directives/
   styleUrl: './trending-repos-page.component.scss',
   providers: [TrendingReposFacade],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RepoListComponent, IntersectionObserverDirective],
+  imports: [RepoListComponent, RepoPaginationComponent],
 })
 export class TrendingReposPageComponent implements OnInit {
   readonly facade = inject(TrendingReposFacade);
@@ -19,12 +19,7 @@ export class TrendingReposPageComponent implements OnInit {
     this.facade.loadInitial();
   }
 
-  onNameClick(repo: GithubRepo): void {
+  onNameClick(_repo: GithubRepo): void {
     // Step 6: open RepoDetailsDialogComponent via CDK Dialog
-    // void repo; // suppress unused-variable lint until Step 6 wires this
-  }
-
-  onSentinelVisible(): void {
-    this.facade.loadNextPage();
   }
 }

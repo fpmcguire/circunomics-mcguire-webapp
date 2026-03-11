@@ -6,11 +6,24 @@ import { AppError } from '../../../../shared/models/app-error.model';
 import { RatingPersistenceService } from '../../infrastructure/datasources/rating-persistence.service';
 import { INITIAL_STATE, RatingsMap, TrendingReposState } from '../state/trending-repos.state';
 
-/** Number of repos requested per page from the GitHub API. */
-const PER_PAGE = 100;
+/** Number of repos requested per GitHub API page. */
+const API_PER_PAGE = 100;
 
 /** Look back this many days when querying the GitHub API. */
 const DAY_RANGE = 30;
+
+/**
+ * Number of repos visible per UI page.
+ *
+ * Terminology:
+ *  - **API page** — a batch of up to API_PER_PAGE repos fetched from GitHub
+ *  - **UI page**  — a visible slice of PAGE_SIZE repos rendered to the user
+ *
+ * A single API page fills many UI pages. UI pages are derived from the
+ * in-memory repo cache; additional API pages are fetched on demand when
+ * the user advances beyond what is already loaded.
+ */
+const PAGE_SIZE = 10;
 
 /**
  * TrendingReposFacade — the single orchestration point for the trending repos feature.
@@ -21,6 +34,7 @@ const DAY_RANGE = 30;
  * Responsibilities:
  *  - Load and paginate trending repos via the repository abstraction
  *  - Expose reactive state as read-only computed signals
+ *  - Manage UI pagination (visible page / slice) independently of API pagination
  *  - Manage rating state and sync with localStorage via RatingPersistenceService
  *
  * Components bind to signals only — they never call the repository or
@@ -37,16 +51,26 @@ export class TrendingReposFacade {
   private readonly _ratings = signal<RatingsMap>(this.persistence.load());
 
   /**
+   * Current UI page number (1-indexed).
+   * Separate from the API page counter — one API page covers many UI pages.
+   */
+  private readonly _uiPage = signal(1);
+
+  /**
+   * UI page to advance to once an in-flight API fetch completes.
+   * Set by goToNextPage() when a fetch is needed; cleared in the fetch handler.
+   */
+  private _pendingUiPage: number | null = null;
+
+  /**
    * Guard against concurrent page fetches.
    * Set to true while a request is in-flight; cleared on completion or error.
    */
   private isFetching = false;
 
   /**
-   * Tracks the page number of the most recent fetch attempt.
-   * Used by retry() to deterministically replay the failed request rather than
-   * inferring the page from state — which would break if prefetching or
-   * arbitrary-page loading is ever introduced.
+   * Tracks the API page number of the most recent fetch attempt.
+   * Used by retry() to deterministically replay the failed request.
    */
   private _lastAttemptedPage = 0;
 
@@ -67,6 +91,50 @@ export class TrendingReposFacade {
       !this._state().isLoading && this._state().error === null && this._state().repos.length === 0,
   );
 
+  // --- UI pagination signals ---
+
+  /** Current 1-indexed UI page number. */
+  readonly visiblePage = this._uiPage.asReadonly();
+
+  /** The configured page size (constant; exposed for templates and tests). */
+  readonly pageSize = PAGE_SIZE;
+
+  /** The slice of loaded repos visible on the current UI page. */
+  readonly visibleRepos = computed(() => {
+    const start = (this._uiPage() - 1) * PAGE_SIZE;
+    return this._state().repos.slice(start, start + PAGE_SIZE);
+  });
+
+  /** 1-indexed position of the first repo on the current UI page (0 when list is empty). */
+  readonly visibleRangeStart = computed(() => {
+    if (this._state().repos.length === 0) return 0;
+    return (this._uiPage() - 1) * PAGE_SIZE + 1;
+  });
+
+  /** 1-indexed position of the last repo on the current UI page. */
+  readonly visibleRangeEnd = computed(() => {
+    const end = this._uiPage() * PAGE_SIZE;
+    return Math.min(end, this._state().repos.length);
+  });
+
+  /** Total number of repos loaded from the API so far. */
+  readonly totalLoaded = computed(() => this._state().repos.length);
+
+  /**
+   * True when the user can advance to the next UI page.
+   * Requires either already-loaded data for the next page, or more API pages
+   * available to fetch. Disabled while any fetch is in-flight.
+   */
+  readonly canGoNext = computed(() => {
+    const state = this._state();
+    if (state.isLoading || state.isLoadingMore) return false;
+    const nextPageStartIndex = this._uiPage() * PAGE_SIZE; // 0-indexed
+    return nextPageStartIndex < state.repos.length || state.hasMore;
+  });
+
+  /** True when the user can go back to a previous UI page. */
+  readonly canGoPrevious = computed(() => this._uiPage() > 1);
+
   // --- Actions ---
 
   /**
@@ -80,21 +148,39 @@ export class TrendingReposFacade {
   }
 
   /**
-   * Load the next page of results.
-   * No-ops if already fetching, there are no more pages, or the initial load
-   * is still in progress.
+   * Advance to the next UI page.
+   *
+   * If the required data is already in the in-memory cache, the page advances
+   * instantly. If not, an API fetch is triggered and the page advances only
+   * after the fetch completes — the current page remains visible during loading.
    */
-  loadNextPage(): void {
-    const state = this._state();
-    if (this.isFetching || !state.hasMore || state.isLoading) return;
-    const nextPage = state.currentPage + 1;
-    this._patch({ isLoadingMore: true, error: null });
-    this._fetchPage(nextPage);
+  goToNextPage(): void {
+    if (!this.canGoNext()) return;
+    const nextUiPage = this._uiPage() + 1;
+    const nextPageStartIndex = this._uiPage() * PAGE_SIZE; // 0-indexed first item of next page
+
+    if (nextPageStartIndex < this._state().repos.length) {
+      // Data already loaded — instant navigation
+      this._uiPage.set(nextUiPage);
+    } else {
+      // Need more API data — record desired page and fetch
+      this._pendingUiPage = nextUiPage;
+      this._triggerNextApiPage();
+    }
+  }
+
+  /**
+   * Go back to the previous UI page.
+   * No-ops on page 1.
+   */
+  goToPreviousPage(): void {
+    if (!this.canGoPrevious()) return;
+    this._uiPage.update((p) => p - 1);
   }
 
   /**
    * Retry after an error.
-   * Replays the exact page that failed, using the recorded _lastAttemptedPage.
+   * Replays the exact API page that failed, using the recorded _lastAttemptedPage.
    * If no page was ever attempted, defaults to page 1.
    */
   retry(): void {
@@ -127,42 +213,62 @@ export class TrendingReposFacade {
 
   // --- Private helpers ---
 
+  /**
+   * Trigger the next API page fetch.
+   * No-ops if already fetching, there are no more pages, or initial load is running.
+   */
+  private _triggerNextApiPage(): void {
+    const state = this._state();
+    if (this.isFetching || !state.hasMore || state.isLoading) return;
+    const nextApiPage = state.currentPage + 1;
+    this._patch({ isLoadingMore: true, error: null });
+    this._fetchPage(nextApiPage);
+  }
+
   private _fetchPage(page: number): void {
     this.isFetching = true;
     this._lastAttemptedPage = page;
 
-    this.repository.fetchTrendingRepos({ page, perPage: PER_PAGE, dayRange: DAY_RANGE }).subscribe({
-      next: (result) => {
-        this.isFetching = false;
+    this.repository
+      .fetchTrendingRepos({ page, perPage: API_PER_PAGE, dayRange: DAY_RANGE })
+      .subscribe({
+        next: (result) => {
+          this.isFetching = false;
 
-        const existing = this._state().repos;
-        const merged = this._mergeRepos(existing, result.repos);
+          const existing = this._state().repos;
+          const merged = this._mergeRepos(existing, result.repos);
 
-        this._patch({
-          repos: merged,
-          totalCount: result.totalCount,
-          currentPage: page,
-          hasMore: !result.isLastPage,
-          isLoading: false,
-          isLoadingMore: false,
-          error: null,
-        });
-      },
-      error: (err: AppError) => {
-        this.isFetching = false;
-        this._patch({
-          isLoading: false,
-          isLoadingMore: false,
-          error: err,
-        });
-      },
-    });
+          this._patch({
+            repos: merged,
+            totalCount: result.totalCount,
+            currentPage: page,
+            hasMore: !result.isLastPage,
+            isLoading: false,
+            isLoadingMore: false,
+            error: null,
+          });
+
+          // Advance UI page now that the required data has arrived
+          if (this._pendingUiPage !== null) {
+            this._uiPage.set(this._pendingUiPage);
+            this._pendingUiPage = null;
+          }
+        },
+        error: (err: AppError) => {
+          this.isFetching = false;
+          this._pendingUiPage = null;
+          this._patch({
+            isLoading: false,
+            isLoadingMore: false,
+            error: err,
+          });
+        },
+      });
   }
 
   /**
    * Merges two repo arrays, deduplicating by ID.
    * Repos from incoming that already exist in the current list are dropped.
-   * Guards against edge cases where the same page is loaded more than once.
    */
   private _mergeRepos(existing: GithubRepo[], incoming: GithubRepo[]): GithubRepo[] {
     const existingIds = new Set(existing.map((r) => r.id));
@@ -176,3 +282,4 @@ export class TrendingReposFacade {
     this._state.update((current) => ({ ...current, ...patch }));
   }
 }
+

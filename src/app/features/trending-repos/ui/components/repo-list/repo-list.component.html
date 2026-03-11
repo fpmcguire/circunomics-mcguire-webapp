@@ -2,8 +2,6 @@
 <div class="sr-only" aria-live="polite" aria-atomic="true">
   @if (isLoading) {
     Loading trending repositories…
-  } @else if (isLoadingMore) {
-    Loading more repositories…
   } @else if (error) {
     Error: {{ errorMessage }}
   } @else if (isEmpty) {
@@ -92,18 +90,5 @@
     >
       Try again
     </button>
-  </div>
-}
-
-<!-- Loading more indicator (pagination in progress) -->
-@if (isLoadingMore) {
-  <div
-    class="repo-loading-more"
-    role="status"
-    aria-label="Loading more repositories"
-    data-testid="trending-repos-loading-more"
-  >
-    <span class="repo-loading-more__spinner" aria-hidden="true"></span>
-    <span class="sr-only">Loading more repositories…</span>
   </div>
 }

@@ -93,8 +93,17 @@ GithubTrendingReposRepository (infrastructure)
 ### State management
 
 Angular signals — no NgRx. For a single-feature app, signals give the same unidirectional data
-flow with far less boilerplate. The facade (Step 4) will expose: `repos`, `isLoading`,
-`isLoadingMore`, `error`, `hasMore`, `ratings` as signals consumed directly by components.
+flow with far less boilerplate. The facade exposes two layers of pagination state:
+
+**API pagination state** (GitHub fetch tracking):
+`repos`, `isLoading`, `isLoadingMore`, `error`, `hasMore`, `currentPage`, `totalCount`, `ratings`
+
+**UI pagination state** (visible slice):
+`visiblePage`, `visibleRepos`, `visibleRangeStart`, `visibleRangeEnd`, `totalLoaded`, `canGoNext`, `canGoPrevious`
+
+These two layers are strictly separated — see Architecture for the API page vs UI page distinction.
+
+All signals are consumed directly by components; no component manages its own pagination state.
 
 ---
 
@@ -171,7 +180,7 @@ Duration    9.41s
 | `github-trending-repos.repository.spec.ts` | 12 | Integration — HTTP, errors, deduplication |
 
 ### Final run
-*92 tests passing across 8 files as of Step 5. Updated after Step 7 is complete.*
+*115 tests passing across 9 files as of Step 5.5. Updated after Step 7 is complete.*
 
 ---
 

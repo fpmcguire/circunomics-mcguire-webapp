@@ -170,60 +170,28 @@ describe('TrendingReposFacade', () => {
     });
   });
 
-  describe('loadNextPage()', () => {
-    it('appends repos from the next page', () => {
-      const { facade } = setup([
-        makePage([makeRepo(1), makeRepo(2)]),
-        makePage([makeRepo(3), makeRepo(4)], true),
-      ]);
+  describe('goToNextPage() — UI pagination', () => {
+    it('visibleRepos returns the first PAGE_SIZE repos on page 1', () => {
+      const repos = Array.from({ length: 15 }, (_, i) => makeRepo(i + 1));
+      const { facade } = setup([makePage(repos)]);
       facade.loadInitial();
-      facade.loadNextPage();
-      expect(facade.repos()).toHaveLength(4);
-      expect(facade.repos()[2].name).toBe('repo-3');
+      expect(facade.visibleRepos()).toHaveLength(10);
+      expect(facade.visibleRepos()[0].id).toBe(1);
+      expect(facade.visibleRepos()[9].id).toBe(10);
     });
 
-    it('marks hasMore false after the last page', () => {
-      const { facade } = setup([makePage([makeRepo(1)]), makePage([makeRepo(2)], true)]);
+    it('visibleRepos returns the next slice after goToNextPage() when data is cached', () => {
+      const repos = Array.from({ length: 15 }, (_, i) => makeRepo(i + 1));
+      const { facade } = setup([makePage(repos, true)]);
       facade.loadInitial();
-      facade.loadNextPage();
-      expect(facade.hasMore()).toBe(false);
+      facade.goToNextPage();
+      expect(facade.visiblePage()).toBe(2);
+      expect(facade.visibleRepos()).toHaveLength(5);
+      expect(facade.visibleRepos()[0].id).toBe(11);
     });
 
-    it('increments currentPage for each page loaded', () => {
-      const { facade } = setup([
-        makePage([makeRepo(1)]),
-        makePage([makeRepo(2)]),
-        makePage([makeRepo(3)], true),
-      ]);
-      facade.loadInitial();
-      expect(facade.currentPage()).toBe(1);
-      facade.loadNextPage();
-      expect(facade.currentPage()).toBe(2);
-      facade.loadNextPage();
-      expect(facade.currentPage()).toBe(3);
-    });
-
-    it('only sets isLoadingMore — not isLoading — for subsequent pages', () => {
-      const { facade } = setup([makePage([makeRepo(1)]), makePage([makeRepo(2)], true)]);
-      facade.loadInitial();
-      facade.loadNextPage();
-      expect(facade.isLoading()).toBe(false);
-      expect(facade.isLoadingMore()).toBe(false);
-    });
-
-    it('deduplicates repos that appear in both pages', () => {
-      const shared = makeRepo(1);
-      const { facade } = setup([
-        makePage([shared, makeRepo(2)]),
-        makePage([shared, makeRepo(3)], true),
-      ]);
-      facade.loadInitial();
-      facade.loadNextPage();
-      expect(facade.repos()).toHaveLength(3);
-    });
-
-    it('does not fetch when hasMore is false', () => {
-      const stub = repoStub([makePage([makeRepo(1)], true)]);
+    it('does not trigger an API fetch when next-page data is already loaded', () => {
+      const stub = repoStub([makePage(Array.from({ length: 15 }, (_, i) => makeRepo(i + 1)), true)]);
       TestBed.configureTestingModule({
         providers: [
           TrendingReposFacade,
@@ -233,8 +201,154 @@ describe('TrendingReposFacade', () => {
       });
       const facade = TestBed.inject(TrendingReposFacade);
       facade.loadInitial();
-      facade.loadNextPage();
+      facade.goToNextPage(); // page 2 data already in cache
       expect(stub.fetchTrendingRepos).toHaveBeenCalledTimes(1);
+    });
+
+    it('triggers an API fetch and advances UI page only after data arrives', () => {
+      // 10 items loaded; next UI page needs item 11 which is not yet cached
+      const repos = Array.from({ length: 10 }, (_, i) => makeRepo(i + 1));
+      const moreRepos = Array.from({ length: 10 }, (_, i) => makeRepo(i + 11));
+      const { facade } = setup([makePage(repos), makePage(moreRepos, true)]);
+      facade.loadInitial();
+      expect(facade.visiblePage()).toBe(1);
+
+      facade.goToNextPage(); // must fetch; page advances after data arrives (of() is sync)
+      expect(facade.visiblePage()).toBe(2);
+      expect(facade.visibleRepos()[0].id).toBe(11);
+      expect(facade.isLoadingMore()).toBe(false);
+    });
+
+    it('canGoNext is false on the last UI page with no more API pages', () => {
+      const repos = Array.from({ length: 5 }, (_, i) => makeRepo(i + 1));
+      const { facade } = setup([makePage(repos, true)]);
+      facade.loadInitial();
+      expect(facade.canGoNext()).toBe(false);
+    });
+
+    it('canGoNext is true when cached data exists for the next UI page', () => {
+      const repos = Array.from({ length: 15 }, (_, i) => makeRepo(i + 1));
+      const { facade } = setup([makePage(repos, true)]);
+      facade.loadInitial();
+      expect(facade.canGoNext()).toBe(true);
+    });
+
+    it('canGoNext is true when hasMore is true even with no cached next-page data', () => {
+      const repos = Array.from({ length: 10 }, (_, i) => makeRepo(i + 1));
+      const { facade } = setup([makePage(repos)]);
+      facade.loadInitial();
+      expect(facade.canGoNext()).toBe(true);
+    });
+
+    it('canGoPrevious is false on page 1', () => {
+      const { facade } = setup([makePage([makeRepo(1)])]);
+      facade.loadInitial();
+      expect(facade.canGoPrevious()).toBe(false);
+    });
+
+    it('canGoPrevious is true after advancing to page 2', () => {
+      const repos = Array.from({ length: 15 }, (_, i) => makeRepo(i + 1));
+      const { facade } = setup([makePage(repos, true)]);
+      facade.loadInitial();
+      facade.goToNextPage();
+      expect(facade.canGoPrevious()).toBe(true);
+    });
+
+    it('goToPreviousPage() decrements the UI page', () => {
+      const repos = Array.from({ length: 15 }, (_, i) => makeRepo(i + 1));
+      const { facade } = setup([makePage(repos, true)]);
+      facade.loadInitial();
+      facade.goToNextPage();
+      expect(facade.visiblePage()).toBe(2);
+      facade.goToPreviousPage();
+      expect(facade.visiblePage()).toBe(1);
+      expect(facade.visibleRepos()[0].id).toBe(1);
+    });
+
+    it('goToPreviousPage() is a no-op on page 1', () => {
+      const { facade } = setup([makePage([makeRepo(1)])]);
+      facade.loadInitial();
+      facade.goToPreviousPage();
+      expect(facade.visiblePage()).toBe(1);
+    });
+
+    it('preserves ratings when navigating UI pages', () => {
+      const repos = Array.from({ length: 15 }, (_, i) => makeRepo(i + 1));
+      const persistence = persistenceStub({ 1: 5 });
+      const { facade } = setup([makePage(repos, true)], persistence);
+      facade.loadInitial();
+      facade.goToNextPage(); // repo 1 no longer visible
+      expect(facade.getRating(1)).toBe(5); // rating still in memory
+      facade.goToPreviousPage(); // repo 1 back in view
+      expect(facade.getRating(1)).toBe(5);
+    });
+
+    it('visibleRangeStart and visibleRangeEnd reflect the current UI page', () => {
+      const repos = Array.from({ length: 15 }, (_, i) => makeRepo(i + 1));
+      const { facade } = setup([makePage(repos, true)]);
+      facade.loadInitial();
+      expect(facade.visibleRangeStart()).toBe(1);
+      expect(facade.visibleRangeEnd()).toBe(10);
+      facade.goToNextPage();
+      expect(facade.visibleRangeStart()).toBe(11);
+      expect(facade.visibleRangeEnd()).toBe(15);
+    });
+
+    it('clears _pendingUiPage on API error so page does not advance', () => {
+      const repos = Array.from({ length: 10 }, (_, i) => makeRepo(i + 1));
+      let call = 0;
+      TestBed.configureTestingModule({
+        providers: [
+          TrendingReposFacade,
+          {
+            provide: TrendingReposRepository,
+            useValue: {
+              fetchTrendingRepos: vi.fn(() =>
+                call++ === 0 ? of(makePage(repos)) : throwError(() => APP_ERRORS.network()),
+              ),
+            },
+          },
+          { provide: RatingPersistenceService, useValue: persistenceStub() },
+        ],
+      });
+      const facade = TestBed.inject(TrendingReposFacade);
+      facade.loadInitial();
+      facade.goToNextPage(); // triggers fetch; fetch fails
+      expect(facade.visiblePage()).toBe(1); // page must not advance
+      expect(facade.error()?.kind).toBe('network');
+    });
+  });
+
+  describe('API data loading', () => {
+    it('appends repos from subsequent API pages into the in-memory cache', () => {
+      // 10 repos on page 1; goToNextPage triggers page 2 fetch
+      const page1 = Array.from({ length: 10 }, (_, i) => makeRepo(i + 1));
+      const page2 = [makeRepo(11)];
+      const { facade } = setup([makePage(page1), makePage(page2, true)]);
+      facade.loadInitial();
+      facade.goToNextPage(); // needs item 11, not cached — triggers API page 2
+      expect(facade.repos()).toHaveLength(11);
+    });
+
+    it('marks hasMore false after the last API page', () => {
+      const { facade } = setup([makePage([makeRepo(1)]), makePage([makeRepo(2)], true)]);
+      facade.loadInitial();
+      facade.goToNextPage(); // fetches page 2
+      expect(facade.hasMore()).toBe(false);
+    });
+
+    it('deduplicates repos that appear in both API pages', () => {
+      const shared = makeRepo(1);
+      const repos = Array.from({ length: 10 }, (_, i) => makeRepo(i + 1));
+      const { facade } = setup([
+        makePage(repos),
+        makePage([shared, makeRepo(11)], true),
+      ]);
+      facade.loadInitial();
+      facade.goToNextPage(); // fetch page 2 (needs item 11)
+      // shared (id=1) was already in page 1; should not be duplicated
+      const ids = facade.repos().map((r) => r.id);
+      expect(new Set(ids).size).toBe(ids.length);
     });
   });
 
@@ -273,6 +387,8 @@ describe('TrendingReposFacade', () => {
     });
 
     it('clears isLoadingMore and preserves existing repos when a page-2+ fetch fails', () => {
+      // 10 repos loaded; goToNextPage triggers API page 2 which fails
+      const repos = Array.from({ length: 10 }, (_, i) => makeRepo(i + 1));
       let call = 0;
       TestBed.configureTestingModule({
         providers: [
@@ -281,7 +397,7 @@ describe('TrendingReposFacade', () => {
             provide: TrendingReposRepository,
             useValue: {
               fetchTrendingRepos: vi.fn(() =>
-                call++ === 0 ? of(makePage([makeRepo(1)])) : throwError(() => APP_ERRORS.network()),
+                call++ === 0 ? of(makePage(repos)) : throwError(() => APP_ERRORS.network()),
               ),
             },
           },
@@ -290,8 +406,8 @@ describe('TrendingReposFacade', () => {
       });
       const facade = TestBed.inject(TrendingReposFacade);
       facade.loadInitial();
-      facade.loadNextPage();
-      expect(facade.repos()).toHaveLength(1);
+      facade.goToNextPage(); // triggers page 2 fetch which fails
+      expect(facade.repos()).toHaveLength(10);
       expect(facade.isLoadingMore()).toBe(false);
       expect(facade.error()?.kind).toBe('network');
     });
@@ -324,7 +440,9 @@ describe('TrendingReposFacade', () => {
       expect(facade.repos()).toHaveLength(1);
     });
 
-    it('replays the exact failed page — not currentPage + 1', () => {
+    it('replays the exact failed API page — not currentPage + 1', () => {
+      // Need 10 repos on page 1 so goToNextPage triggers an API fetch for page 2
+      const page1Repos = Array.from({ length: 10 }, (_, i) => makeRepo(i + 1));
       let call = 0;
       let failOnThirdCall = false;
       TestBed.configureTestingModule({
@@ -335,9 +453,9 @@ describe('TrendingReposFacade', () => {
             useValue: {
               fetchTrendingRepos: vi.fn(() => {
                 const n = call++;
-                if (n === 0) return of(makePage([makeRepo(1)])); // page 1 ok
-                if (n === 1) return throwError(() => APP_ERRORS.network()); // page 2 fails
-                if (failOnThirdCall) return of(makePage([makeRepo(2)], true)); // retry succeeds
+                if (n === 0) return of(makePage(page1Repos)); // API page 1 ok
+                if (n === 1) return throwError(() => APP_ERRORS.network()); // API page 2 fails
+                if (failOnThirdCall) return of(makePage([makeRepo(11)], true)); // retry succeeds
                 return throwError(() => APP_ERRORS.network());
               }),
             },
@@ -346,15 +464,15 @@ describe('TrendingReposFacade', () => {
         ],
       });
       const facade = TestBed.inject(TrendingReposFacade);
-      facade.loadInitial(); // call 0 — page 1 succeeds
-      facade.loadNextPage(); // call 1 — page 2 fails
+      facade.loadInitial(); // call 0 — API page 1 succeeds
+      facade.goToNextPage(); // call 1 — API page 2 fails (no cached data for UI page 2)
       expect(facade.error()).not.toBeNull();
-      expect(facade.currentPage()).toBe(1); // page 1 is still the last successful page
+      expect(facade.currentPage()).toBe(1); // last successful API page is still 1
 
       failOnThirdCall = true;
-      facade.retry(); // call 2 — replays page 2 (not page 3)
+      facade.retry(); // call 2 — replays API page 2 (not page 3)
       expect(facade.error()).toBeNull();
-      expect(facade.repos()).toHaveLength(2); // page-1 repo + page-2 repo
+      expect(facade.repos()).toHaveLength(11); // 10 from page 1 + 1 from page 2
     });
 
     it('sets isLoading for an initial-page retry', () => {

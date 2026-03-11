@@ -116,34 +116,61 @@ Responsible for talking to the outside world. Implements the domain contract.
 The single orchestration point between infrastructure and UI. Components never call the
 repository directly.
 
-**Will expose signals:**
+**Exposes two layers of signals:**
+
+*API pagination state (GitHub fetch tracking):*
 ```typescript
 repos:          Signal<GithubRepo[]>
-isLoading:      Signal<boolean>       // initial page load
-isLoadingMore:  Signal<boolean>       // page 2+ loads
+isLoading:      Signal<boolean>             // initial page load
+isLoadingMore:  Signal<boolean>             // API page 2+ in-flight
 error:          Signal<AppError | null>
-hasMore:        Signal<boolean>
+hasMore:        Signal<boolean>             // more API pages available
+currentPage:    Signal<number>              // last successfully loaded API page
+totalCount:     Signal<number>              // GitHub total match count
 ratings:        Signal<Record<number, number>>  // repoId → 1–5 stars
+isEmpty:        Signal<boolean>
 ```
+
+*UI pagination state (visible slice):*
+```typescript
+visiblePage:       Signal<number>           // current UI page (1-indexed)
+visibleRepos:      Signal<GithubRepo[]>     // computed slice of 10 repos
+visibleRangeStart: Signal<number>           // 1-indexed first item shown
+visibleRangeEnd:   Signal<number>           // 1-indexed last item shown
+totalLoaded:       Signal<number>           // repos in memory cache
+canGoNext:         Signal<boolean>
+canGoPrevious:     Signal<boolean>
+```
+
+**API page vs UI page — the key distinction:**
+
+| Term | Meaning |
+|---|---|
+| **API page** | A batch of up to 100 repos fetched from GitHub (`page=N` query param) |
+| **UI page** | A visible slice of 10 repos rendered to the user |
+
+One API page fills 10 UI pages. `goToNextPage()` advances instantly if the required repos are
+already cached; otherwise records `_pendingUiPage` and triggers an API fetch — the UI page
+advances only after data arrives, preventing premature empty renders.
 
 **Why a facade over multiple services:**
 - One place to look for all feature state
 - Components stay thin — no repository or storage logic
 - The entire load → paginate → rate → persist flow is testable in one integration test
-- Signals make derived state (`isEmpty`, `canLoadMore`) readable inline with `computed()`
+- Signals make derived state (`isEmpty`, `canGoNext`) readable inline with `computed()`
 
 ---
 
 ### UI / Presentation layer
 
-*(Implemented in Steps 5–6)*
+*(Implemented in Steps 5–5.5–6)*
 
-**Planned component hierarchy:**
+**Component hierarchy:**
 ```
 TrendingReposPageComponent          ← injects facade, owns layout
   └── RepoListComponent             ← @Input: repos, isLoading, error
         └── RepoCardComponent       ← @Input: repo, rating — emits nameClick
-  └── IntersectionObserverDirective ← sentinel for infinite scroll
+  └── RepoPaginationComponent       ← @Input: page state — emits previousClick/nextClick
   └── RepoDetailsDialogComponent    ← opened via CDK Dialog, injects facade for rating
         └── StarRatingComponent     ← radio-group pattern, fully keyboard accessible
 ```
@@ -186,10 +213,11 @@ RepoListComponent → RepoCardComponent
 | Server data | `signal<GithubRepo[]>` — set by facade after each page fetch |
 | Pagination | `signal<number>` currentPage, incremented by facade action |
 | Initial load | `signal<boolean>` isLoading |
-| Subsequent pages | `signal<boolean>` isLoadingMore |
+| Subsequent pages | `signal<boolean>` isLoadingMore (API page 2+ in-flight; shown in pagination control) |
+| UI pagination | `signal<number>` visiblePage + computed `visibleRepos`, `canGoNext`, `canGoPrevious` |
 | Error state | `signal<AppError \| null>` — typed, resettable |
 | Ratings | `signal<Record<number, number>>` + localStorage sync |
-| Derived state | `computed()` — `isEmpty`, `canLoadMore`, etc. |
+| Derived state | `computed()` — `isEmpty`, `visibleRangeStart`, `visibleRangeEnd`, etc. |
 
 NgRx would add actions, reducers, effects, and selectors with no benefit at this scale.
 
@@ -233,7 +261,8 @@ Accessibility is a structural concern, built in from the start — not a retrofi
 |---|---|
 | Modal | CDK Dialog — focus trap, Escape key, `aria-modal="true"`, `aria-labelledby` |
 | Star rating | Radio group — fully keyboard navigable, screen-reader labelled |
-| Infinite scroll sentinel | `aria-hidden="true"` — not announced to screen readers |
+| Infinite scroll sentinel | Removed in Step 5.5 — replaced by explicit pagination controls |
+| Pagination controls | `<nav aria-label="Repository list pagination">` with real `<button>` elements; Previous/Next have descriptive `aria-label`; disabled state conveyed via `disabled` attribute |
 | Loading/error announcements | `aria-live="polite"` region (Step 5) |
 | Skip link | First focusable element in `index.html` — targets `#main-content` |
 | Focus ring | `:focus-visible` in global reset — always shown for keyboard users |

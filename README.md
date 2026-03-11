@@ -5,6 +5,15 @@ A polished Angular 21 web app listing the most-starred GitHub repositories creat
 
 > **Full architecture, decisions, and tradeoffs are documented in [PROJECT.md](./PROJECT.md).**
 
+### What it does
+
+- Fetches the most-starred GitHub repositories created in the last 30 days
+- Displays them 10 per page with **Previous / Next pagination controls**
+- Loads additional GitHub API data on demand as you page forward — no unnecessary prefetching
+- Lets you rate any repository 1–5 stars via a modal *(Step 6 — in progress)*; ratings persist across page navigation and browser sessions
+
+> The original challenge spec requested infinite scroll. This implementation uses explicit page-based navigation instead — a deliberate UX enhancement introduced at stakeholder request. See `ROADMAP.md` Step 5.5 for rationale.
+
 ---
 
 ## Getting started

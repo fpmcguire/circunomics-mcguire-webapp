@@ -174,16 +174,16 @@
 
 ---
 
-## Step 5 — List UI + Infinite Scroll ✅ DONE
+## Step 5 — List UI ✅ DONE
 
-**Goal:** Polished, accessible, responsive repo list with infinite scroll and all UI states.
+**Goal:** Polished, accessible, responsive repo list with all UI states.
 
 ### Deliverables
-- `TrendingReposPageComponent` — replaces placeholder; page heading, list, all states, sentinel
+- `TrendingReposPageComponent` — replaces placeholder; page heading, list, all states
 - `RepoListComponent` — semantic `<ul>/<li>`, `role="list"`, all UI state branches
 - `RepoCardComponent` — avatar, name button, description, stars badge, issues badge, rating (shown only when `rating > 0`)
-- Skeleton loading, loading-more indicator, error + retry, empty state
-- `IntersectionObserverDirective` — sentinel-based infinite scroll; `disabled` input prevents churn during active fetches
+- Skeleton loading, error + retry, empty state
+- `IntersectionObserverDirective` — utility directive retained in shared/directives (used by future scroll needs); removed from page template as part of Step 5.5
 
 ### Corrections applied after Tech Lead review
 - `trending-repos-list-item-name-link` → `trending-repos-list-item-name-button` (element is `<button>`, not `<a>`)
@@ -198,7 +198,7 @@
 trending-repos-page-title     trending-repos-list
 trending-repos-list-item      trending-repos-list-item-name-button
 trending-repos-list-item-rating
-trending-repos-loading        trending-repos-loading-more
+trending-repos-loading
 trending-repos-error          trending-repos-error-retry
 trending-repos-empty
 ```
@@ -208,6 +208,66 @@ trending-repos-empty
 |---|---|
 | `ng build` | ✅ Clean |
 | `ng test` | ✅ 92/92 passing |
+| `ng lint` | ✅ All files pass |
+
+---
+
+## Step 5.5 — Paginated List View ✅ DONE
+
+**Goal:** Replace the continuous infinite-scroll browsing experience with an explicit paginated list — a deliberate UX/product adjustment beyond the original challenge brief, introduced at stakeholder request.
+
+### Context and rationale
+
+The original challenge specification asked for infinite scroll. After Step 5 shipped, stakeholders requested a bounded list presentation with explicit page navigation. Step 5.5 implements that enhancement while preserving the underlying on-demand GitHub API pagination architecture intact.
+
+**Key design decision:** The word "pagination" means two different things in this codebase and they are kept strictly separate:
+
+| Term | What it means |
+|---|---|
+| **API page** | A batch of up to 100 repos fetched from the GitHub Search API (`page=N` query param) |
+| **UI page** | A visible slice of 10 repos rendered to the user at one time |
+
+A single API page fills 10 UI pages. The system fetches additional API pages only when the user navigates beyond what is already cached in memory.
+
+### Deliverables
+
+**Facade additions (`TrendingReposFacade`):**
+- `_uiPage` — private signal tracking current UI page (1-indexed)
+- `_pendingUiPage` — pending navigation target while an API fetch is in-flight
+- `visiblePage` — read-only public signal
+- `visibleRepos` — computed slice of 10 repos for the current UI page
+- `visibleRangeStart` / `visibleRangeEnd` — 1-indexed range for the range indicator
+- `totalLoaded` — total repos in the in-memory cache
+- `canGoNext` / `canGoPrevious` — computed booleans accounting for cache and API state
+- `goToNextPage()` — instant if cached; triggers API fetch + advances only after data arrives
+- `goToPreviousPage()` — instant decrement, always operates on cached data
+- `PAGE_SIZE = 10` constant (named separately from `API_PER_PAGE`)
+
+**New component:**
+- `RepoPaginationComponent` — fully presentational; receives all state as inputs, emits `previousClick` / `nextClick`; Previous/Next buttons, page indicator, range indicator, loading spinner on Next during fetch
+
+**Updated components:**
+- `TrendingReposPageComponent` — imports `RepoPaginationComponent`; binds all facade pagination signals; `IntersectionObserverDirective` removed from template
+- `RepoListComponent` — `isLoadingMore` input removed (loading feedback moved to pagination control)
+
+**Removed from Step 5:**
+- Infinite scroll sentinel `<div>` in page template
+- `isLoadingMore` input on `RepoListComponent`
+- Loading-more indicator block in `RepoListComponent` template
+
+### data-testid additions
+```
+trending-repos-pagination
+trending-repos-pagination-prev-button   trending-repos-pagination-next-button
+trending-repos-pagination-page-indicator
+trending-repos-pagination-range-indicator
+```
+
+### Verification
+| Check | Result |
+|---|---|
+| `ng build` | ✅ Clean |
+| `ng test` | ✅ 115/115 passing |
 | `ng lint` | ✅ All files pass |
 
 ---
