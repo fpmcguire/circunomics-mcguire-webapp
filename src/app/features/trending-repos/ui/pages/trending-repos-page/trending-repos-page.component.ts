@@ -9,7 +9,10 @@ import { Component } from '@angular/core';
   template: `
     <section aria-labelledby="page-title">
       <h1 id="page-title" data-testid="trending-repos-page-title">Trending Repositories</h1>
-      <p>Loading feature coming in Step 3…</p>
+      <p>
+        Data integration is in place. The interactive repository list is being completed in the next
+        milestone.
+      </p>
     </section>
   `,
 })

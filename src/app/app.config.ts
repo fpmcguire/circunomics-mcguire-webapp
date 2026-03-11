@@ -7,6 +7,7 @@ import { routes } from './app.routes';
 import { githubAuthInterceptor } from './core/services/github-auth.interceptor';
 import { TrendingReposRepository } from './features/trending-repos/domain/repositories/trending-repos.repository';
 import { GithubTrendingReposRepository } from './features/trending-repos/infrastructure/repositories/github-trending-repos.repository';
+import { TrendingReposFacade } from './features/trending-repos/application/facades/trending-repos.facade';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -14,11 +15,11 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(withFetch(), withInterceptors([githubAuthInterceptor])),
     provideAnimationsAsync(),
-    // Bind the abstract repository token to its concrete implementation.
-    // Swap this with a mock provider in tests.
-    {
-      provide: TrendingReposRepository,
-      useClass: GithubTrendingReposRepository,
-    },
+    // Bind abstract repository token to GitHub implementation.
+    // Swap with a mock provider in tests.
+    { provide: TrendingReposRepository, useClass: GithubTrendingReposRepository },
+    // Facade is feature-scoped — not providedIn: 'root'.
+    // Providing here makes it available app-wide for this single-feature app.
+    TrendingReposFacade,
   ],
 };
