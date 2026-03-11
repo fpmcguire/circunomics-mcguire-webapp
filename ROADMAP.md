@@ -306,12 +306,22 @@ trending-repos-pagination-range-indicator
 - `.repo-details-dialog-backdrop` — semi-transparent black at 45% opacity
 - `.repo-details-dialog-panel` — `width: min(600px, 95vw)`, `max-height: 90vh`
 
-**Rating flow (end-to-end):**
-1. User clicks a card name → `onNameClick(repo)` → `Dialog.open()` with current rating
-2. User selects stars → `selectedRating` signal updates → feedback text updates live
-3. User clicks X icon, Close button, Escape, or backdrop → `dialogRef.close({ stars })`
-4. Page receives close result → if `stars > 0` → `facade.setRating()` → `_ratings` signal updates
-5. Cards re-render via `[rating]="getRating(repo.id)"` binding → star display appears
+**Rating flow — Option A (explicit save):**
+1. Dialog opens with current persisted rating pre-filled
+2. User selects a star → `selectedRating` signal updates (preview only — not yet committed)
+3. **"Save rating"** button (enabled only when `canSave()`) → `saveAndClose()` → `dialogRef.close({ stars })`
+4. X icon / Cancel button / Escape / backdrop → `dismiss()` → `dialogRef.close()` (no result — rating unchanged)
+5. Page receives close result — persists only when result is defined and `stars > 0`
+
+**External link accessibility** (`View on GitHub`):
+- SVG icon is `aria-hidden="true"` + `focusable="false"`
+- Visually-hidden `<span class="sr-only">(opens in new tab)</span>` appended inside the `<a>` for clean screen-reader announcement
+
+**Draggable dialog — intentionally deferred:**
+- CDK DragDrop drag-to-reposition was evaluated and deliberately not implemented
+- Focus trap, keyboard navigation, and Escape handling are prioritised over drag interaction
+- If drag is added in a future iteration it must be verified to leave all accessibility behaviour intact
+- Documented in component JSDoc
 
 ### data-testid conventions
 ```
@@ -320,7 +330,7 @@ repo-details-modal-name       repo-details-modal-description
 repo-rating-star-1 … repo-rating-star-5
 ```
 
-### Tests (140/140 passing)
+### Tests (143/143 passing)
 | File | Tests | New? |
 |---|---|---|
 | `app.spec.ts` | 2 | — |
@@ -333,14 +343,24 @@ repo-rating-star-1 … repo-rating-star-5
 | `repo-list.component.spec.ts` | 15 | — |
 | `repo-pagination.component.spec.ts` | 15 | — |
 | `star-rating.component.spec.ts` | 10 | ✅ New |
-| `repo-details-dialog.component.spec.ts` | 15 | ✅ New |
+| `repo-details-dialog.component.spec.ts` | 18 | ✅ New |
 
 ### Verification
 | Check | Result |
 |---|---|
 | `ng build` | ✅ Clean |
-| `ng test` | ✅ 140/140 passing |
+| `ng test` | ✅ 143/143 passing |
 | `ng lint` | ✅ All files pass |
+
+### Corrections applied after Tech Lead review
+| Feedback | Applied |
+|---|---|
+| Stale `infrastructure/repositories/trending-repos.repository.ts` | ✅ Deleted |
+| `docs/REQUIREMENTS.md` definition of done contradicts Step 5.5 | ✅ Rewritten — notes original brief, implemented behaviour, and rationale link |
+| Dialog dismissal should not implicitly commit rating | ✅ Option A — explicit **Save rating** button; X / Cancel / Escape / backdrop all dismiss without saving |
+| Draggable dialog — document intentional deferral | ✅ Documented in component JSDoc and ROADMAP |
+| `IntersectionObserverDirective` — decide: keep or remove | ✅ Removed — no remaining usage |
+| External-link SVG should be `aria-hidden` + `sr-only` span | ✅ Applied |
 
 ---
 
@@ -359,6 +379,11 @@ repo-rating-star-1 … repo-rating-star-5
   4. Error state displayed when API fails
 - `PROJECT.md` finalized — tradeoffs, first + final test run results
 - Final verification gate: build ✓ · tests ✓ · lint ✓ · prettier ✓ · E2E ✓
+
+### Carry-forward from Tech Lead Step 6 review (nice-to-have)
+- **`RepoCardComponent`** — modernize from `@Input`/`@Output`/`EventEmitter` to `input()`/`output()` signals for consistency with newer components
+- **`ref.closed.subscribe()`** in `TrendingReposPageComponent.onNameClick` — evaluate whether a cleaner pattern (e.g. `takeUntilDestroyed`) should be standardized
+- Final pass on any remaining subscription patterns for consistency
 
 ---
 

@@ -28,7 +28,10 @@ const makeRepo = (overrides: Partial<GithubRepo> = {}): GithubRepo => ({
 
 const makeMockDialogRef = () => ({ close: vi.fn() });
 
-const renderDialog = (overrides: Partial<RepoDetailsDialogData> = {}, mockRef = makeMockDialogRef()) => {
+const renderDialog = (
+  overrides: Partial<RepoDetailsDialogData> = {},
+  mockRef = makeMockDialogRef(),
+) => {
   const data: RepoDetailsDialogData = {
     repo: makeRepo(),
     currentRating: 0,
@@ -94,7 +97,6 @@ describe('RepoDetailsDialogComponent', () => {
 
     it('passes the current rating to the star rating component', async () => {
       await renderDialog({ currentRating: 3 });
-      // Stars 1–3 should be filled; 4–5 should not
       for (let i = 1; i <= 3; i++) {
         expect(screen.getByTestId(`repo-rating-star-${i}`)).toHaveClass(
           'star-rating__label--filled',
@@ -113,61 +115,86 @@ describe('RepoDetailsDialogComponent', () => {
 
       await user.click(screen.getByTestId('repo-rating-star-4'));
 
-      expect(screen.getByText('Rated 4 out of 5 stars')).toBeInTheDocument();
+      expect(screen.getByText(/rated 4 out of 5 stars/i)).toBeInTheDocument();
     });
   });
 
-  describe('close behaviour', () => {
-    it('calls dialogRef.close when the X icon button is clicked', async () => {
-      const user = userEvent.setup();
-      const mockRef = makeMockDialogRef();
-      await renderDialog({}, mockRef);
-
-      await user.click(screen.getByTestId('repo-details-modal-close-button'));
-
-      expect(mockRef.close).toHaveBeenCalledOnce();
+  describe('Save rating button', () => {
+    it('is disabled when no rating has been selected', async () => {
+      await renderDialog({ currentRating: 0 });
+      expect(screen.getByRole('button', { name: /save rating/i })).toBeDisabled();
     });
 
-    it('calls dialogRef.close when the footer Close button is clicked', async () => {
+    it('is enabled when the user selects a star', async () => {
       const user = userEvent.setup();
-      const mockRef = makeMockDialogRef();
-      await renderDialog({}, mockRef);
+      await renderDialog({ currentRating: 0 });
 
-      await user.click(screen.getByRole('button', { name: /^close$/i }));
+      await user.click(screen.getByTestId('repo-rating-star-3'));
 
-      expect(mockRef.close).toHaveBeenCalledOnce();
+      expect(screen.getByRole('button', { name: /save rating/i })).not.toBeDisabled();
     });
 
-    it('closes with stars: 0 when no rating has been selected', async () => {
-      const user = userEvent.setup();
-      const mockRef = makeMockDialogRef();
-      await renderDialog({ currentRating: 0 }, mockRef);
-
-      await user.click(screen.getByTestId('repo-details-modal-close-button'));
-
-      expect(mockRef.close).toHaveBeenCalledWith({ stars: 0 });
+    it('is enabled when a pre-existing rating is loaded', async () => {
+      await renderDialog({ currentRating: 2 });
+      expect(screen.getByRole('button', { name: /save rating/i })).not.toBeDisabled();
     });
 
-    it('closes with the selected rating when a star was clicked before closing', async () => {
+    it('calls dialogRef.close with stars when Save is clicked', async () => {
       const user = userEvent.setup();
       const mockRef = makeMockDialogRef();
       await renderDialog({ currentRating: 0 }, mockRef);
 
       await user.click(screen.getByTestId('repo-rating-star-5'));
-      await user.click(screen.getByTestId('repo-details-modal-close-button'));
+      await user.click(screen.getByRole('button', { name: /save rating/i }));
 
       expect(mockRef.close).toHaveBeenCalledWith({ stars: 5 });
     });
 
-    it('closes with updated rating when user changes a pre-existing rating', async () => {
+    it('saves a changed rating over a pre-existing one', async () => {
       const user = userEvent.setup();
       const mockRef = makeMockDialogRef();
       await renderDialog({ currentRating: 2 }, mockRef);
 
       await user.click(screen.getByTestId('repo-rating-star-4'));
-      await user.click(screen.getByRole('button', { name: /^close$/i }));
+      await user.click(screen.getByRole('button', { name: /save rating/i }));
 
       expect(mockRef.close).toHaveBeenCalledWith({ stars: 4 });
+    });
+  });
+
+  describe('dismiss behaviour (no rating committed)', () => {
+    it('calls dialogRef.close with no arguments when X icon is clicked', async () => {
+      const user = userEvent.setup();
+      const mockRef = makeMockDialogRef();
+      await renderDialog({}, mockRef);
+
+      await user.click(screen.getByTestId('repo-details-modal-close-button'));
+
+      expect(mockRef.close).toHaveBeenCalledWith();
+    });
+
+    it('calls dialogRef.close with no arguments when Cancel button is clicked', async () => {
+      const user = userEvent.setup();
+      const mockRef = makeMockDialogRef();
+      await renderDialog({}, mockRef);
+
+      await user.click(screen.getByRole('button', { name: /^cancel$/i }));
+
+      expect(mockRef.close).toHaveBeenCalledWith();
+    });
+
+    it('does not commit rating when user selects a star then dismisses via X', async () => {
+      const user = userEvent.setup();
+      const mockRef = makeMockDialogRef();
+      await renderDialog({ currentRating: 0 }, mockRef);
+
+      await user.click(screen.getByTestId('repo-rating-star-3'));
+      await user.click(screen.getByTestId('repo-details-modal-close-button'));
+
+      expect(mockRef.close).toHaveBeenCalledWith();
+      expect(mockRef.close).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stars: expect.any(Number) }),
+      );
     });
   });
 });

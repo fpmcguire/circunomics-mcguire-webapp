@@ -113,6 +113,6 @@ A submission meets the challenge brief when:
 - it is an Angular app
 - it fetches and displays the most-starred GitHub repositories created in the last 30 days
 - each row shows all required repository details
-- infinite scrolling loads more paginated results
+- users can browse through all results (original brief specified infinite scroll; implemented solution uses explicit previous/next UI pagination per Step 5.5 — see `ROADMAP.md` for full rationale)
 - extra-credit modal and rating behavior work if implemented
 - project documentation and test run results are included

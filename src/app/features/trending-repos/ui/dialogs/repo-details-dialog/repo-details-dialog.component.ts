@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 
 import { GithubRepo } from '../../../domain/models/github-repo.model';
@@ -13,19 +13,26 @@ import { RepoDetailsDialogData, RepoDetailsDialogResult } from './repo-details-d
  *
  * Opened via Angular CDK Dialog — the CDK handles:
  *  - Focus trap (tab cycling within the dialog)
- *  - Escape key closes the dialog
- *  - Backdrop click closes the dialog
+ *  - Escape key closes the dialog (dismiss — no rating saved)
+ *  - Backdrop click closes the dialog (dismiss — no rating saved)
  *  - Focus restoration to the triggering element on close
  *  - role="dialog", aria-modal="true" on the overlay pane
  *
  * The page component passes `ariaLabelledBy: 'repo-details-dialog-title'` in
  * the open config, connecting the dialog title to the overlay's accessible name.
  *
- * Rating flow:
- *  - Dialog opens with the current persisted rating
- *  - User selects a star → selectedRating signal updates
- *  - Dialog closes (any path) → returns { stars: selectedRating() }
- *  - Page component saves the rating via facade.setRating() if stars > 0
+ * Rating flow — Option A (explicit save):
+ *  - Dialog opens with the current persisted rating pre-filled
+ *  - User selects a star → selectedRating signal updates (preview only)
+ *  - "Save rating" button → saveAndClose() → returns { stars: selectedRating() }
+ *  - X icon / Cancel / Escape / backdrop → dismiss() → returns undefined
+ *  - Page component saves only when result is defined and stars > 0
+ *
+ * Draggable dialog:
+ *  - CDK DragDrop drag-to-reposition was intentionally not implemented.
+ *  - Accessibility and focus behaviour take priority over drag interaction.
+ *  - If drag is added in a future iteration it must be verified to leave
+ *    keyboard navigation, focus trap, and Escape handling fully intact.
  */
 @Component({
   selector: 'app-repo-details-dialog',
@@ -45,6 +52,9 @@ export class RepoDetailsDialogComponent {
 
   /** Current rating selection within this dialog session. */
   protected readonly selectedRating = signal(this.data.currentRating);
+
+  /** True when the user has selected a star and the Save button should be enabled. */
+  protected readonly canSave = computed(() => this.selectedRating() > 0);
 
   protected get repo(): GithubRepo {
     return this.data.repo;
@@ -67,8 +77,21 @@ export class RepoDetailsDialogComponent {
     this.selectedRating.set(stars);
   }
 
-  /** Close the dialog, passing back the current rating selection. */
-  protected close(): void {
+  /**
+   * Save the selected rating and close.
+   * Only reachable via the explicit "Save rating" button — not triggered by
+   * Escape, backdrop click, or the Cancel/X buttons.
+   */
+  protected saveAndClose(): void {
     this.dialogRef.close({ stars: this.selectedRating() });
+  }
+
+  /**
+   * Dismiss the dialog without saving.
+   * Called by the X icon and Cancel buttons. Escape and backdrop click also
+   * produce this outcome via CDK's default close behaviour (undefined result).
+   */
+  protected dismiss(): void {
+    this.dialogRef.close();
   }
 }
