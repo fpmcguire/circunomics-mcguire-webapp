@@ -272,18 +272,46 @@ trending-repos-pagination-range-indicator
 
 ---
 
-## Step 6 — Modal + Rating ⏳ PENDING
+## Step 6 — Modal + Rating ✅ DONE
 
 **Goal:** Accessible repo details modal with 5-star rating synced back to the list.
 
-### Planned deliverables
-- `RepoDetailsDialogComponent` via Angular CDK Dialog
-  - Focus trap, Escape closes, backdrop click closes
-  - Focus restored to triggering element on close
-  - `role="dialog"`, `aria-labelledby`, `aria-modal="true"`
-- `StarRatingComponent` — radio-group pattern, ARIA labelled, keyboard navigable
-- Rating synced to facade → list shows stars + number after modal closes
-- Draggable header via CDK DragDrop **only if** keyboard/focus behavior remains intact
+### Delivered
+
+**`StarRatingComponent`** `ui/components/star-rating/`:
+- Radio-group pattern — browser handles arrow-key navigation natively
+- Controlled component: parent owns the persisted rating via `currentRating` input signal
+- Hover preview: `hoverRating` signal drives visual fill before selection is committed
+- `displayRating` computed signal — hover takes priority over persisted rating
+- `focus-within` outline on each label for keyboard visibility
+- data-testids: `repo-rating-star-1` … `repo-rating-star-5`
+
+**`RepoDetailsDialogComponent`** `ui/dialogs/repo-details-dialog/`:
+- Opened via Angular CDK `Dialog` service — CDK provides: focus trap, Escape closes, backdrop click closes, `role="dialog"`, `aria-modal="true"`, focus restoration to triggering element
+- `ariaLabelledBy: 'repo-details-dialog-title'` connects dialog title to overlay accessible name
+- Data injected via CDK `DIALOG_DATA` token — `{ repo, currentRating }`
+- `selectedRating` signal tracks the user's in-dialog selection; initialized from `currentRating`
+- Closes with `{ stars: selectedRating() }` via both X icon button and footer Close button
+- Shows: owner avatar, full name, description, star count, open issues, creation date, GitHub link, rating section
+- `aria-live="polite"` rating feedback region announces selection changes
+- data-testids: `repo-details-modal`, `repo-details-modal-close-button`, `repo-details-modal-name`, `repo-details-modal-description`
+
+**`TrendingReposPageComponent` — updated:**
+- Injects CDK `Dialog` service
+- `onNameClick(repo)` opens the dialog passing `{ repo, currentRating: facade.getRating(repo.id) }`
+- Subscribes to `dialogRef.closed` — calls `facade.setRating(repoId, stars)` when `stars > 0`
+- Star rating appears on the card list immediately after dialog closes (reactive via facade signal)
+
+**Global overlay styles** (`styles.scss`):
+- `.repo-details-dialog-backdrop` — semi-transparent black at 45% opacity
+- `.repo-details-dialog-panel` — `width: min(600px, 95vw)`, `max-height: 90vh`
+
+**Rating flow (end-to-end):**
+1. User clicks a card name → `onNameClick(repo)` → `Dialog.open()` with current rating
+2. User selects stars → `selectedRating` signal updates → feedback text updates live
+3. User clicks X icon, Close button, Escape, or backdrop → `dialogRef.close({ stars })`
+4. Page receives close result → if `stars > 0` → `facade.setRating()` → `_ratings` signal updates
+5. Cards re-render via `[rating]="getRating(repo.id)"` binding → star display appears
 
 ### data-testid conventions
 ```
@@ -291,6 +319,28 @@ repo-details-modal            repo-details-modal-close-button
 repo-details-modal-name       repo-details-modal-description
 repo-rating-star-1 … repo-rating-star-5
 ```
+
+### Tests (140/140 passing)
+| File | Tests | New? |
+|---|---|---|
+| `app.spec.ts` | 2 | — |
+| `github-query.utils.spec.ts` | 8 | — |
+| `github-repo.mapper.spec.ts` | 5 | — |
+| `github-trending-repos.repository.spec.ts` | 12 | — |
+| `rating-persistence.service.spec.ts` | 8 | — |
+| `trending-repos.facade.spec.ts` | 38 | — |
+| `repo-card.component.spec.ts` | 12 | — |
+| `repo-list.component.spec.ts` | 15 | — |
+| `repo-pagination.component.spec.ts` | 15 | — |
+| `star-rating.component.spec.ts` | 10 | ✅ New |
+| `repo-details-dialog.component.spec.ts` | 15 | ✅ New |
+
+### Verification
+| Check | Result |
+|---|---|
+| `ng build` | ✅ Clean |
+| `ng test` | ✅ 140/140 passing |
+| `ng lint` | ✅ All files pass |
 
 ---
 

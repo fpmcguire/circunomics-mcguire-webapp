@@ -1,0 +1,164 @@
+<!-- =====================================================================
+  RepoDetailsDialogComponent
+  The CDK Dialog overlay provides: role="dialog", aria-modal="true",
+  focus trap, Escape-to-close, and backdrop-click-to-close.
+  aria-labelledby="repo-details-dialog-title" is set via open() config.
+  ===================================================================== -->
+
+<!-- Dialog header -------------------------------------------------- -->
+<header class="repo-details-dialog__header">
+  <div class="repo-details-dialog__title-group">
+    <img
+      class="repo-details-dialog__avatar"
+      [src]="repo.owner.avatarUrl"
+      [alt]="repo.owner.login + ' avatar'"
+      width="32"
+      height="32"
+      loading="eager"
+    />
+    <h2
+      class="repo-details-dialog__title"
+      id="repo-details-dialog-title"
+      data-testid="repo-details-modal-name"
+    >
+      <span class="repo-details-dialog__owner">{{ repo.owner.login }}</span
+      ><span class="repo-details-dialog__sep">/</span
+      ><span class="repo-details-dialog__repo">{{ repo.name }}</span>
+    </h2>
+  </div>
+
+  <button
+    class="repo-details-dialog__close-icon"
+    type="button"
+    aria-label="Close details dialog"
+    data-testid="repo-details-modal-close-button"
+    (click)="close()"
+  >
+    <svg
+      viewBox="0 0 16 16"
+      width="16"
+      height="16"
+      fill="currentColor"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"
+      />
+    </svg>
+  </button>
+</header>
+
+<!-- Dialog body ---------------------------------------------------- -->
+<div class="repo-details-dialog__body">
+  <!-- Description -->
+  @if (repo.description) {
+    <p class="repo-details-dialog__description" data-testid="repo-details-modal-description">
+      {{ repo.description }}
+    </p>
+  } @else {
+    <p
+      class="repo-details-dialog__description repo-details-dialog__description--empty"
+      data-testid="repo-details-modal-description"
+    >
+      No description provided.
+    </p>
+  }
+
+  <!-- Meta row: stars · issues · created -->
+  <div class="repo-details-dialog__meta" aria-label="Repository statistics">
+    <span class="repo-details-dialog__meta-item repo-details-dialog__meta-item--stars">
+      <svg
+        viewBox="0 0 16 16"
+        width="14"
+        height="14"
+        fill="currentColor"
+        aria-hidden="true"
+        class="repo-details-dialog__meta-icon repo-details-dialog__meta-icon--star"
+      >
+        <path
+          d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"
+        />
+      </svg>
+      <span>{{ formattedStars }} stars</span>
+    </span>
+
+    <span class="repo-details-dialog__meta-item">
+      <svg
+        viewBox="0 0 16 16"
+        width="14"
+        height="14"
+        fill="currentColor"
+        aria-hidden="true"
+        class="repo-details-dialog__meta-icon"
+      >
+        <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" />
+        <path
+          d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z"
+        />
+      </svg>
+      <span>{{ repo.openIssues }} open issues</span>
+    </span>
+
+    <span class="repo-details-dialog__meta-item">
+      <svg
+        viewBox="0 0 16 16"
+        width="14"
+        height="14"
+        fill="currentColor"
+        aria-hidden="true"
+        class="repo-details-dialog__meta-icon"
+      >
+        <path
+          d="M4.75 0a.75.75 0 0 1 .75.75V2h5V.75a.75.75 0 0 1 1.5 0V2h1.25c.966 0 1.75.784 1.75 1.75v10.5A1.75 1.75 0 0 1 13.25 16H2.75A1.75 1.75 0 0 1 1 14.25V3.75C1 2.784 1.784 2 2.75 2H4V.75A.75.75 0 0 1 4.75 0ZM2.5 7.5v6.75c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25V7.5Zm10.75-4H2.75a.25.25 0 0 0-.25.25V6h11V3.75a.25.25 0 0 0-.25-.25Z"
+        />
+      </svg>
+      <span>Created {{ createdAtFormatted }}</span>
+    </span>
+  </div>
+
+  <!-- Rating section -->
+  <section class="repo-details-dialog__rating-section" aria-labelledby="rating-section-heading">
+    <h3 class="repo-details-dialog__rating-heading" id="rating-section-heading">Your rating</h3>
+
+    <app-star-rating
+      [currentRating]="selectedRating()"
+      [repoId]="repo.id"
+      (ratingChange)="onRatingChange($event)"
+    />
+
+    <p class="repo-details-dialog__rating-feedback" aria-live="polite">
+      @if (selectedRating() > 0) {
+        Rated {{ selectedRating() }} out of 5 stars
+      } @else {
+        Click a star to rate this repository
+      }
+    </p>
+  </section>
+</div>
+
+<!-- Dialog footer -------------------------------------------------- -->
+<footer class="repo-details-dialog__footer">
+  <a
+    class="repo-details-dialog__github-link"
+    [href]="repo.url"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    View on GitHub
+    <svg
+      viewBox="0 0 16 16"
+      width="12"
+      height="12"
+      fill="currentColor"
+      aria-label="(opens in new tab)"
+      role="img"
+    >
+      <path
+        d="M3.75 2h3.5a.75.75 0 0 1 0 1.5h-3.5a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-3.5a.75.75 0 0 1 1.5 0v3.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2Zm6.854-1h4.146a.25.25 0 0 1 .25.25v4.146a.25.25 0 0 1-.427.177L13.03 4.03 9.28 7.78a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l3.75-3.75-1.543-1.543A.25.25 0 0 1 10.604 1Z"
+      />
+    </svg>
+  </a>
+
+  <button class="repo-details-dialog__close-btn" type="button" (click)="close()">Close</button>
+</footer>

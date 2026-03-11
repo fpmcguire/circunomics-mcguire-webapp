@@ -7,3 +7,19 @@
 @use 'styles/reset' as *;
 @use 'styles/typography' as *;
 @use 'styles/utilities' as *;
+
+// =============================================================================
+// CDK Dialog overlay — applied globally because the overlay lives outside the
+// component tree and cannot be targeted by component-scoped styles.
+// =============================================================================
+
+// Semi-transparent backdrop
+.repo-details-dialog-backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+
+// Overlay pane: centers the dialog and constrains its size
+.repo-details-dialog-panel {
+  width: min(600px, 95vw);
+  max-height: 90vh;
+}

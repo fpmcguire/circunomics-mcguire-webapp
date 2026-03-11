@@ -1,0 +1,32 @@
+<!--
+  Radio group pattern for star rating.
+  - Each star is a <label> wrapping a visually-hidden <input type="radio">
+  - Browser handles arrow-key navigation between radios natively
+  - Hover events on the <label> drive the preview; the hidden input captures the value
+-->
+<fieldset class="star-rating" (mouseleave)="onLeave()">
+  <legend class="sr-only">Rate this repository</legend>
+
+  @for (value of stars; track value) {
+    <label
+      class="star-rating__label"
+      [class.star-rating__label--filled]="isFilled(value)"
+      [attr.data-testid]="'repo-rating-star-' + value"
+      [attr.title]="starLabel(value)"
+      (mouseenter)="onHover(value)"
+    >
+      <input
+        type="radio"
+        class="sr-only"
+        [name]="'repo-rating-' + repoId()"
+        [value]="value"
+        [checked]="currentRating() === value"
+        (change)="onSelect(value)"
+      />
+      <span class="star-rating__icon" aria-hidden="true">
+        {{ isFilled(value) ? '★' : '☆' }}
+      </span>
+      <span class="sr-only">{{ starLabel(value) }}</span>
+    </label>
+  }
+</fieldset>

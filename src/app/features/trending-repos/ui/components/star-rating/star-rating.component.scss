@@ -1,0 +1,38 @@
+.star-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  border: none;
+  padding: 0;
+  margin: 0;
+
+  &__label {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    padding: var(--space-1);
+    transition: transform var(--transition-fast);
+    color: var(--color-text-muted);
+
+    &--filled {
+      color: var(--color-star);
+    }
+
+    &:hover {
+      transform: scale(1.2);
+    }
+
+    // Visible focus ring when the hidden radio receives keyboard focus
+    &:focus-within {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+  }
+
+  &__icon {
+    font-size: var(--text-2xl);
+    line-height: 1;
+    user-select: none;
+  }
+}
