@@ -1,1 +1,9 @@
-/* You can add global styles to this file, and also import other style files */
+// =============================================================================
+// Global styles entry point
+// Import order matters: tokens first, then reset, then utilities
+// =============================================================================
+
+@use 'styles/tokens' as *;
+@use 'styles/reset' as *;
+@use 'styles/typography' as *;
+@use 'styles/utilities' as *;
