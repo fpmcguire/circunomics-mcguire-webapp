@@ -81,9 +81,10 @@ describe('RepoListComponent', () => {
       const repos = [makeRepo(1), makeRepo(2)];
       const ratings = { 1: 4, 2: 0 };
       await renderList({ repos, ratings });
-      const cards = screen.getAllByTestId('trending-repos-list-item-rating');
-      expect(cards[0]).toHaveAttribute('aria-label', 'Rated 4 out of 5 stars');
-      expect(cards[1]).toHaveAttribute('aria-label', 'Not yet rated');
+      // Only the rated card renders a rating block (rating > 0 guard)
+      const ratingBlocks = screen.getAllByTestId('trending-repos-list-item-rating');
+      expect(ratingBlocks).toHaveLength(1);
+      expect(ratingBlocks[0]).toHaveAttribute('aria-label', 'Rated 4 out of 5 stars');
     });
   });
 

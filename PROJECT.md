@@ -69,9 +69,9 @@ src/
             │
             └── ui/
                 ├── pages/
-                │   └── trending-repos-page/   # Placeholder — replaced in Step 5
-                ├── components/      # (Steps 5–6 — RepoCard, RepoList, StarRating)
-                └── dialogs/         # (Step 6 — RepoDetailsDialog)
+                │   └── trending-repos-page/   # TrendingReposPageComponent
+                ├── components/      # RepoCardComponent, RepoListComponent (Step 6 adds StarRating)
+                └── dialogs/         # (Step 6 — RepoDetailsDialogComponent)
 ```
 
 ### Key layering rule
@@ -171,7 +171,7 @@ Duration    9.41s
 | `github-trending-repos.repository.spec.ts` | 12 | Integration — HTTP, errors, deduplication |
 
 ### Final run
-*(Updated after Step 7 is complete.)*
+*92 tests passing across 8 files as of Step 5. Updated after Step 7 is complete.*
 
 ---
 

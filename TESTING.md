@@ -216,9 +216,9 @@ npm run e2e:ui        # Playwright interactive UI
 | `github-trending-repos.repository.spec.ts` | 12 | Integration — HTTP, errors, dedup |
 | `rating-persistence.service.spec.ts` | 8 | Unit — localStorage validation |
 | `trending-repos.facade.spec.ts` | 27 | Integration — all facade flows |
-| `repo-card.component.spec.ts` | 13 | Integration — card rendering + interactions |
+| `repo-card.component.spec.ts` | 11 | Integration — card rendering + interactions |
 | `repo-list.component.spec.ts` | 17 | Integration — list states + events |
-| **Total** | **92** | |
+| **Total** | **91** | |
 
 E2E tests added in Step 7.
 

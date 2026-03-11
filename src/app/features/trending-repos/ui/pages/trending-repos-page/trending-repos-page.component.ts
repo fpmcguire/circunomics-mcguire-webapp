@@ -20,9 +20,8 @@ export class TrendingReposPageComponent implements OnInit {
   }
 
   onNameClick(repo: GithubRepo): void {
-    // Step 6: open RepoDetailsDialog
-    // Stored here as a named method so Step 6 has a clear hook to wire into.
-    console.log('Open details for', repo.fullName);
+    // Step 6: open RepoDetailsDialogComponent via CDK Dialog
+    // void repo; // suppress unused-variable lint until Step 6 wires this
   }
 
   onSentinelVisible(): void {

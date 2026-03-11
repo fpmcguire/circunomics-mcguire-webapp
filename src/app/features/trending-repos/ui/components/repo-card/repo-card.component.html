@@ -59,32 +59,25 @@
         </svg>
         <span>{{ repo.openIssues }}</span>
       </span>
-      <a
-        class="repo-card__owner-link"
-        [href]="repo.owner.profileUrl"
-        target="_blank"
-        rel="noopener noreferrer"
-        [attr.aria-label]="'View ' + repo.owner.login + ' on GitHub'"
-      >
-        {{ repo.owner.login }}
-      </a>
     </div>
 
-    <div
-      class="repo-card__rating"
-      data-testid="trending-repos-list-item-rating"
-      [attr.aria-label]="ratingLabel"
-      role="img"
-    >
-      @for (filled of starArray; track $index) {
-        <span
-          class="repo-card__rating-star"
-          [class.repo-card__rating-star--filled]="filled"
-          aria-hidden="true"
-        >
-          ★
-        </span>
-      }
-    </div>
+    @if (rating > 0) {
+      <div
+        class="repo-card__rating"
+        data-testid="trending-repos-list-item-rating"
+        [attr.aria-label]="ratingLabel"
+        role="img"
+      >
+        @for (filled of starArray; track $index) {
+          <span
+            class="repo-card__rating-star"
+            [class.repo-card__rating-star--filled]="filled"
+            aria-hidden="true"
+          >
+            ★
+          </span>
+        }
+      </div>
+    }
   </div>
 </article>

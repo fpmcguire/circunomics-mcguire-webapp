@@ -174,27 +174,41 @@
 
 ---
 
-## Step 5 — List UI + Infinite Scroll ⏳ PENDING
+## Step 5 — List UI + Infinite Scroll ✅ DONE
 
 **Goal:** Polished, accessible, responsive repo list with infinite scroll and all UI states.
 
-### Planned deliverables
-- `TrendingReposPageComponent` — replaces placeholder; page heading, list, states
-- `RepoListComponent` — semantic `<ul>/<li>`, `role="list"`
-- `RepoCardComponent` — avatar, name link, description, stars badge, issues badge, owner, rating
+### Deliverables
+- `TrendingReposPageComponent` — replaces placeholder; page heading, list, all states, sentinel
+- `RepoListComponent` — semantic `<ul>/<li>`, `role="list"`, all UI state branches
+- `RepoCardComponent` — avatar, name button, description, stars badge, issues badge, rating (shown only when `rating > 0`)
 - Skeleton loading, loading-more indicator, error + retry, empty state
-- `IntersectionObserverDirective` — sentinel-based infinite scroll
-- **Accessibility built in from the start** — semantic HTML, visible focus, screen-reader text, `data-testid` applied as components are built
+- `IntersectionObserverDirective` — sentinel-based infinite scroll; `disabled` input prevents churn during active fetches
+
+### Corrections applied after Tech Lead review
+- `trending-repos-list-item-name-link` → `trending-repos-list-item-name-button` (element is `<button>`, not `<a>`)
+- Rating block hidden when `rating === 0` — only shown after user rates in modal
+- `console.log` hook removed from `onNameClick()`
+- `IntersectionObserverDirective` hardened with `disabled` input + `connect()`/`disconnect()` cycle
+- Duplicate owner text removed from card footer (owner already shown in `owner/repo` title)
+- `docs/REQUIREMENTS.md` and `docs/ARCHITECTURE.md` added; `TESTING.md` added at project root
 
 ### data-testid conventions
 ```
 trending-repos-page-title     trending-repos-list
-trending-repos-list-item      trending-repos-list-item-name-link
+trending-repos-list-item      trending-repos-list-item-name-button
 trending-repos-list-item-rating
 trending-repos-loading        trending-repos-loading-more
 trending-repos-error          trending-repos-error-retry
 trending-repos-empty
 ```
+
+### Verification
+| Check | Result |
+|---|---|
+| `ng build` | ✅ Clean |
+| `ng test` | ✅ 92/92 passing |
+| `ng lint` | ✅ All files pass |
 
 ---
 

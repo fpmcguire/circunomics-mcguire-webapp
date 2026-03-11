@@ -30,8 +30,7 @@ describe('RepoCardComponent', () => {
     it('renders the owner login and repo name', async () => {
       await renderCard();
       expect(screen.getByTestId('trending-repos-list-item-name-button')).toBeInTheDocument();
-      // owner appears in both the name button and the footer link
-      expect(screen.getAllByText('octocat').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText('octocat')).toBeInTheDocument();
       expect(screen.getByText('awesome-project')).toBeInTheDocument();
     });
 
@@ -69,14 +68,6 @@ describe('RepoCardComponent', () => {
       await renderCard(makeRepo({ openIssues: 12 }));
       expect(screen.getByText('12')).toBeInTheDocument();
     });
-
-    it('renders an owner link to the GitHub profile', async () => {
-      await renderCard();
-      const link = screen.getByRole('link', { name: /view octocat on github/i });
-      expect(link).toHaveAttribute('href', 'https://github.com/octocat');
-      expect(link).toHaveAttribute('target', '_blank');
-      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
-    });
   });
 
   describe('avatar', () => {
@@ -88,13 +79,12 @@ describe('RepoCardComponent', () => {
   });
 
   describe('rating display', () => {
-    it('shows "Not yet rated" aria-label when rating is 0', async () => {
+    it('hides the rating block when rating is 0', async () => {
       await renderCard(makeRepo(), 0);
-      const rating = screen.getByTestId('trending-repos-list-item-rating');
-      expect(rating).toHaveAttribute('aria-label', 'Not yet rated');
+      expect(screen.queryByTestId('trending-repos-list-item-rating')).not.toBeInTheDocument();
     });
 
-    it('shows correct aria-label when rating is 4', async () => {
+    it('shows the rating block with correct aria-label when rating is 4', async () => {
       await renderCard(makeRepo(), 4);
       const rating = screen.getByTestId('trending-repos-list-item-rating');
       expect(rating).toHaveAttribute('aria-label', 'Rated 4 out of 5 stars');

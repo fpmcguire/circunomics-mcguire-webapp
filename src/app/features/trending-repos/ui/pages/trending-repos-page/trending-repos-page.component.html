@@ -28,6 +28,7 @@
       class="repos-page__sentinel"
       aria-hidden="true"
       appIntersectionObserver
+      [disabled]="facade.isLoadingMore()"
       (intersected)="onSentinelVisible()"
     ></div>
   }
