@@ -1,3 +1,21 @@
+<!--
+  Pagination controls appear both above and below the list (user preference).
+  The bindings are defined once in an ng-template to keep the template DRY.
+-->
+<ng-template #paginationControls>
+  <app-repo-pagination
+    [currentPage]="facade.visiblePage()"
+    [canGoPrevious]="facade.canGoPrevious()"
+    [canGoNext]="facade.canGoNext()"
+    [isLoadingMore]="facade.isLoadingMore()"
+    [rangeStart]="facade.visibleRangeStart()"
+    [rangeEnd]="facade.visibleRangeEnd()"
+    [totalLoaded]="facade.totalLoaded()"
+    (previousClick)="facade.goToPreviousPage()"
+    (nextClick)="facade.goToNextPage()"
+  />
+</ng-template>
+
 <div class="repos-page">
   <header class="repos-page__header">
     <h1 class="repos-page__title" id="page-title" data-testid="trending-repos-page-title">
@@ -5,27 +23,27 @@
     </h1>
     <p class="repos-page__subtitle">Most starred open-source projects from the last 30 days</p>
     @if (!facade.isLoading() && facade.totalCount() > 0) {
-    <p class="repos-page__count" aria-live="polite">
-      {{ facade.totalCount().toLocaleString() }} repositories found
-    </p>
+      <p class="repos-page__count" aria-live="polite">
+        {{ facade.totalCount().toLocaleString() }} repositories found
+      </p>
     }
   </header>
 
   @if (!facade.isLoading() && !facade.error() && facade.totalLoaded() > 0) {
-  <app-repo-pagination [currentPage]="facade.visiblePage()" [canGoPrevious]="facade.canGoPrevious()"
-    [canGoNext]="facade.canGoNext()" [isLoadingMore]="facade.isLoadingMore()" [rangeStart]="facade.visibleRangeStart()"
-    [rangeEnd]="facade.visibleRangeEnd()" [totalLoaded]="facade.totalLoaded()"
-    (previousClick)="facade.goToPreviousPage()" (nextClick)="facade.goToNextPage()" />
+    <ng-container *ngTemplateOutlet="paginationControls" />
   }
 
-  <app-repo-list [repos]="facade.visibleRepos()" [isLoading]="facade.isLoading()" [error]="facade.error()"
-    [isEmpty]="facade.isEmpty()" [ratings]="facade.ratings()" (retryClick)="facade.retry()"
-    (nameClick)="onNameClick($event)" />
+  <app-repo-list
+    [repos]="facade.visibleRepos()"
+    [isLoading]="facade.isLoading()"
+    [error]="facade.error()"
+    [isEmpty]="facade.isEmpty()"
+    [ratings]="facade.ratings()"
+    (retryClick)="facade.retry()"
+    (nameClick)="onNameClick($event)"
+  />
 
   @if (!facade.isLoading() && !facade.error() && facade.totalLoaded() > 0) {
-  <app-repo-pagination [currentPage]="facade.visiblePage()" [canGoPrevious]="facade.canGoPrevious()"
-    [canGoNext]="facade.canGoNext()" [isLoadingMore]="facade.isLoadingMore()" [rangeStart]="facade.visibleRangeStart()"
-    [rangeEnd]="facade.visibleRangeEnd()" [totalLoaded]="facade.totalLoaded()"
-    (previousClick)="facade.goToPreviousPage()" (nextClick)="facade.goToNextPage()" />
+    <ng-container *ngTemplateOutlet="paginationControls" />
   }
 </div>

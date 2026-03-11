@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { TrendingReposFacade } from '../../../application/facades/trending-repos.facade';
 import { GithubRepo } from '../../../domain/models/github-repo.model';
 import { RepoListComponent } from '../../components/repo-list/repo-list.component';
@@ -10,7 +11,7 @@ import { RepoPaginationComponent } from '../../components/repo-pagination/repo-p
   styleUrl: './trending-repos-page.component.scss',
   providers: [TrendingReposFacade],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RepoListComponent, RepoPaginationComponent],
+  imports: [RepoListComponent, RepoPaginationComponent, NgTemplateOutlet],
 })
 export class TrendingReposPageComponent implements OnInit {
   readonly facade = inject(TrendingReposFacade);

@@ -51,7 +51,7 @@ describe('RepoPaginationComponent', () => {
     it('shows the range indicator when totalLoaded > 0', async () => {
       await renderPagination({ rangeStart: 11, rangeEnd: 20, totalLoaded: 25 });
       const range = screen.getByTestId('trending-repos-pagination-range-indicator');
-      expect(range).toHaveTextContent('11–20 of 25 loaded');
+      expect(range).toHaveTextContent('Showing 11–20 of 25');
     });
   });
 
