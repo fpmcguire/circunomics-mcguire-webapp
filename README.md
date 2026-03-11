@@ -86,4 +86,4 @@ It is never stored, logged, or persisted beyond the HTTP request.
 
 ## Project structure
 
-See [PROJECT.md](./PROJECT.md) and [ARCHITECTURE.md](./ARCHITECTURE.md) for full details.
+See [PROJECT.md](./PROJECT.md) and [ARCHITECTURE.md](./docs/ARCHITECTURE.md) for full details.

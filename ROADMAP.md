@@ -14,7 +14,7 @@
 - `@angular/cdk` installed
 - `@testing-library/angular` + `user-event` + `jest-dom`
 - Prettier installed, configured, all source files formatted
-- `src/environments/environment.ts` + `environment.prod.ts` — token support, never hardcoded
+- `src/environments/environment.ts` + `environment.prod.ts` — environment config scaffold with empty `githubToken` field (populated optionally in Step 3)
 - `environment.local.ts` pattern documented and added to `.gitignore`
 - `package.json` scripts: `lint`, `format`, `format:check`, `e2e`, `e2e:ui`, `test:watch`
 - `README.md` rewritten — commands, tooling table, rate-limit guidance
@@ -90,6 +90,13 @@
 - `github-query.utils.ts` — `formatDateForGithub`, `daysAgo`, `buildCreatedAfterQuery` (UTC throughout)
 - `github-auth.interceptor.ts` — functional interceptor, fires only for `api.github.com`
 
+  > **Optional PAT support introduced here.** Step 3 is where live API calls begin,
+  > so this is the right moment to add rate-limit mitigation. The app works fully
+  > without a token (GitHub allows ~10 unauthenticated search req/min). A Personal
+  > Access Token raises this to 5,000 req/hr and is useful during development or
+  > demos — it is not a functional dependency. See `environment.ts` and `README.md`
+  > for setup instructions.
+
 **Shared layer:**
 - `app-error.model.ts` — `AppError` discriminated union + `APP_ERRORS` factory functions
 
@@ -115,31 +122,55 @@
 
 ---
 
-## Step 4 — Facade + State ⏳ PENDING
+## Step 4 — Facade + State ✅ DONE
 
 **Goal:** Single, signal-based application layer that all UI components depend on.
 
-### Planned deliverables
-- `TrendingReposFacade` with signals:
-  - `repos` — loaded repository list
-  - `isLoading` — initial page load
-  - `isLoadingMore` — page 2+ loads
-  - `error` — typed `AppError | null`
-  - `hasMore` — controls infinite scroll sentinel
-  - `currentPage` — pagination tracker
-  - `ratings` — `Record<number, number>` keyed by repo ID
-- Pagination merge logic — append pages, deduplicate by repo ID
-- Concurrent request guard — prevents simultaneous page fetches
-- `RatingPersistenceService` — localStorage read/write, minimal data
-- Rate-limit UX — surfaces clear user message when GitHub throttles
+### Delivered
 
-### Tests (integration-focused)
-- Initial load flow — loading → loaded
-- Pagination / page append — repos accumulate correctly
-- Error state transitions — error shown, retry resets state
-- Duplicate load guard — no double fetches
-- Rating update — signal updated, localStorage written
-- Rating persistence — reloaded from localStorage on init
+**State layer** `application/state/trending-repos.state.ts`:
+- `TrendingReposState` — immutable snapshot interface for all feature state
+- `INITIAL_STATE` — clean starting values
+- `RatingsMap` — `Record<number, number>` keyed by repo ID
+
+**RatingPersistenceService** `infrastructure/datasources/rating-persistence.service.ts`:
+- localStorage read/write with full defensive validation
+- Handles: JSON parse failures, non-object values, out-of-range ratings, quota errors
+- Silent degradation — never crashes if storage is unavailable
+- Stores only `{ [repoId]: 1–5 }` — no PII
+
+**TrendingReposFacade** `application/facades/trending-repos.facade.ts`:
+- Public signals: `repos`, `isLoading`, `isLoadingMore`, `error`, `hasMore`, `totalCount`, `currentPage`, `ratings`, `isEmpty`
+- Actions: `loadInitial()`, `loadNextPage()`, `retry()`, `setRating()`, `getRating()`
+- Concurrent fetch guard via `isFetching` boolean
+- `_lastAttemptedPage` — `retry()` replays the exact failed page, not `currentPage + 1`
+- ID-based deduplication on page merge
+- Provided in `TrendingReposPageComponent.providers` — lifecycle scoped to the feature page, not the app root
+
+**Corrections pass (Tech Lead review):**
+- `TrendingReposFacade` moved from `app.config.ts` into `TrendingReposPageComponent.providers`
+- `currentPage` exposed as public computed signal
+- `retry()` tightened: uses `_lastAttemptedPage` for deterministic page replay
+- Stale Step 3/placeholder comments removed from route and page component files
+- `isEmpty` test suite rewritten — reads as confident documentation
+
+### Tests (62/62 passing)
+| File | Tests | Type |
+|---|---|---|
+| `app.spec.ts` | 2 | Integration — shell landmarks |
+| `github-query.utils.spec.ts` | 8 | Unit — date/query builder |
+| `github-repo.mapper.spec.ts` | 5 | Unit — domain mapper |
+| `github-trending-repos.repository.spec.ts` | 12 | Integration — HTTP, errors, deduplication |
+| `rating-persistence.service.spec.ts` | 8 | Unit — localStorage validation + recovery |
+| `trending-repos.facade.spec.ts` | 27 | Integration — all facade flows |
+
+### Verification
+| Check | Result |
+|---|---|
+| `ng build` | ✅ Clean |
+| `ng test` | ✅ 62/62 passing |
+| `ng lint` | ✅ All files pass |
+| `prettier --check` | ✅ Clean |
 
 ---
 

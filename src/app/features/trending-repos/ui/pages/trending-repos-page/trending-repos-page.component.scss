@@ -1,0 +1,35 @@
+.repos-page {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) var(--space-12);
+
+  &__header {
+    margin-bottom: var(--space-6);
+  }
+
+  &__title {
+    font-size: var(--text-2xl);
+    font-weight: var(--weight-bold);
+    color: var(--color-text-primary);
+    letter-spacing: -0.025em;
+    line-height: var(--leading-tight);
+  }
+
+  &__subtitle {
+    margin-top: var(--space-1);
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+  }
+
+  &__count {
+    margin-top: var(--space-2);
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    font-weight: var(--weight-medium);
+  }
+
+  &__sentinel {
+    height: 1px;
+    margin-top: var(--space-4);
+  }
+}

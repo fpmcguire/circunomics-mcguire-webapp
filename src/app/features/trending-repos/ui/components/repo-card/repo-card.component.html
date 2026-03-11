@@ -1,0 +1,90 @@
+<article class="repo-card" data-testid="trending-repos-list-item" [attr.aria-label]="repo.fullName">
+  <div class="repo-card__header">
+    <img
+      class="repo-card__avatar"
+      [src]="repo.owner.avatarUrl"
+      [alt]="repo.owner.login + ' avatar'"
+      width="40"
+      height="40"
+      loading="lazy"
+    />
+    <div class="repo-card__title-group">
+      <button
+        class="repo-card__name"
+        data-testid="trending-repos-list-item-name-button"
+        [attr.aria-label]="'View details for ' + repo.fullName"
+        (click)="onNameClick()"
+      >
+        <span class="repo-card__owner">{{ repo.owner.login }}</span
+        ><span class="repo-card__sep">/</span><span class="repo-card__repo">{{ repo.name }}</span>
+      </button>
+      @if (repo.description) {
+        <p class="repo-card__description">{{ repo.description }}</p>
+      } @else {
+        <p class="repo-card__description repo-card__description--empty">No description</p>
+      }
+    </div>
+  </div>
+
+  <div class="repo-card__footer">
+    <div class="repo-card__stats" aria-label="Repository statistics">
+      <span class="repo-card__stat repo-card__stat--stars" title="Stars">
+        <svg
+          class="repo-card__stat-icon repo-card__stat-icon--star"
+          aria-hidden="true"
+          viewBox="0 0 16 16"
+          width="14"
+          height="14"
+          fill="currentColor"
+        >
+          <path
+            d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"
+          />
+        </svg>
+        <span>{{ formattedStars }}</span>
+      </span>
+      <span class="repo-card__stat" title="Open issues">
+        <svg
+          class="repo-card__stat-icon"
+          aria-hidden="true"
+          viewBox="0 0 16 16"
+          width="14"
+          height="14"
+          fill="currentColor"
+        >
+          <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" />
+          <path
+            d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z"
+          />
+        </svg>
+        <span>{{ repo.openIssues }}</span>
+      </span>
+      <a
+        class="repo-card__owner-link"
+        [href]="repo.owner.profileUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        [attr.aria-label]="'View ' + repo.owner.login + ' on GitHub'"
+      >
+        {{ repo.owner.login }}
+      </a>
+    </div>
+
+    <div
+      class="repo-card__rating"
+      data-testid="trending-repos-list-item-rating"
+      [attr.aria-label]="ratingLabel"
+      role="img"
+    >
+      @for (filled of starArray; track $index) {
+        <span
+          class="repo-card__rating-star"
+          [class.repo-card__rating-star--filled]="filled"
+          aria-hidden="true"
+        >
+          ★
+        </span>
+      }
+    </div>
+  </div>
+</article>

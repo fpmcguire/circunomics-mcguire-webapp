@@ -1,7 +1,7 @@
 # PROJECT.md — Circunomics GitHub Trending Repos
 
 > This document is updated incrementally as each implementation milestone is completed.
-> Full architectural rationale lives in [ARCHITECTURE.md](./ARCHITECTURE.md).
+> Full architectural rationale lives in [ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 > Step-by-step delivery plan lives in [ROADMAP.md](./ROADMAP.md).
 
 ---
@@ -115,11 +115,16 @@ flow with far less boilerplate. The facade (Step 4) will expose: `repos`, `isLoa
 
 ## Security and privacy
 
+**The app requires no authentication to run.** It uses the public GitHub Search API, which allows
+unauthenticated access. A Personal Access Token is an *optional development/demo aid* — not a
+functional dependency — that raises the rate limit from ~10 req/min to 5,000 req/hr. PAT support
+was introduced in Step 3 (the first step that makes live API calls). The interceptor is a no-op
+when `githubToken` is empty, so the app behaves identically without one.
+
 - GitHub token is **never** hardcoded in any tracked file.
-- Local token: create `src/environments/environment.local.ts` (gitignored), set `githubToken`.
-- Production token: inject via deployment platform secrets only.
+- Local token (optional): create `src/environments/environment.local.ts` (gitignored), set `githubToken`.
 - Token is sent only as a `Bearer` Authorization header to `api.github.com` — never stored or logged.
-- `localStorage` will store only `{ [repoId]: starRating }` — no PII, minimal footprint.
+- `localStorage` stores only `{ [repoId]: 1-5 }` — no PII, minimal footprint.
 - All data is from the public GitHub API. No user data is collected or transmitted by this app.
 - Inter font loaded from Google Fonts at runtime — self-host in production for stricter privacy.
 
@@ -151,10 +156,10 @@ Duration    6.80s
 ```
 *Both tests were the Angular starter placeholder tests, replaced in Step 2.*
 
-### Step 3 run (after corrections)
+### Step 4 corrections run
 ```
 Test Files  4 passed (4)
-Tests       27 passed (27)
+Tests       62 passed (62)
 Duration    9.41s
 ```
 
@@ -175,7 +180,7 @@ Duration    9.41s
 | Tradeoff | Notes |
 |---|---|
 | Signals over NgRx | Correct for this scope. Revisit if app grows to multi-feature shared state. |
-| No backend proxy | Unauthenticated users hit GitHub's 10 req/min search limit. Token env var mitigates. |
+| No backend proxy | Unauthenticated users hit GitHub's ~10 req/min search limit. Optional PAT (Step 3) mitigates during development and demos. |
 | Single lazy route chunk | Fine now. Split further if more features are added. |
 | Google Fonts at runtime | Convenient for development. Self-host in production for privacy + performance. |
 | `localStorage` for ratings | Simple, no server dependency. Ratings are lost on browser data clear. |

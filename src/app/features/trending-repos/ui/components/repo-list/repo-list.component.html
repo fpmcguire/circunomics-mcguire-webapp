@@ -1,0 +1,109 @@
+<!-- Status region: announces loading/error changes to screen readers -->
+<div class="sr-only" aria-live="polite" aria-atomic="true">
+  @if (isLoading) {
+    Loading trending repositories…
+  } @else if (isLoadingMore) {
+    Loading more repositories…
+  } @else if (error) {
+    Error: {{ errorMessage }}
+  } @else if (isEmpty) {
+    No trending repositories found.
+  }
+</div>
+
+<!-- Initial loading skeleton -->
+@if (isLoading) {
+  <ul
+    class="repo-list"
+    role="list"
+    aria-busy="true"
+    aria-label="Loading trending repositories"
+    data-testid="trending-repos-loading"
+  >
+    @for (s of skeletons; track $index) {
+      <li class="repo-list__item" aria-hidden="true">
+        <div class="repo-skeleton">
+          <div class="repo-skeleton__header">
+            <div class="skeleton repo-skeleton__avatar"></div>
+            <div class="repo-skeleton__lines">
+              <div class="skeleton repo-skeleton__line repo-skeleton__line--name"></div>
+              <div class="skeleton repo-skeleton__line repo-skeleton__line--desc"></div>
+            </div>
+          </div>
+          <div class="skeleton repo-skeleton__footer"></div>
+        </div>
+      </li>
+    }
+  </ul>
+}
+
+<!-- Loaded repo list -->
+@if (!isLoading && repos.length > 0) {
+  <ul
+    class="repo-list"
+    role="list"
+    aria-label="Trending repositories"
+    data-testid="trending-repos-list"
+  >
+    @for (repo of repos; track repo.id) {
+      <li class="repo-list__item">
+        <app-repo-card
+          [repo]="repo"
+          [rating]="getRating(repo.id)"
+          (nameClick)="nameClick.emit($event)"
+        />
+      </li>
+    }
+  </ul>
+}
+
+<!-- Empty state -->
+@if (!isLoading && isEmpty && !error) {
+  <div class="repo-empty" role="status" data-testid="trending-repos-empty">
+    <div class="repo-empty__icon" aria-hidden="true">🔭</div>
+    <h2 class="repo-empty__heading">No trending repos found</h2>
+    <p class="repo-empty__text">
+      No repositories matched the last 30 days criteria. Try again later.
+    </p>
+  </div>
+}
+
+<!-- Error state -->
+@if (error) {
+  <div class="repo-error" role="alert" aria-live="assertive" data-testid="trending-repos-error">
+    <div class="repo-error__icon" aria-hidden="true">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="24" height="24" aria-hidden="true">
+        <path
+          fill-rule="evenodd"
+          d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    </div>
+    <div class="repo-error__body">
+      <p class="repo-error__heading">{{ errorHeading }}</p>
+      <p class="repo-error__message">{{ errorMessage }}</p>
+    </div>
+    <button
+      class="repo-error__retry"
+      type="button"
+      data-testid="trending-repos-error-retry"
+      (click)="retryClick.emit()"
+    >
+      Try again
+    </button>
+  </div>
+}
+
+<!-- Loading more indicator (pagination in progress) -->
+@if (isLoadingMore) {
+  <div
+    class="repo-loading-more"
+    role="status"
+    aria-label="Loading more repositories"
+    data-testid="trending-repos-loading-more"
+  >
+    <span class="repo-loading-more__spinner" aria-hidden="true"></span>
+    <span class="sr-only">Loading more repositories…</span>
+  </div>
+}

@@ -260,13 +260,30 @@ No tests for trivial getters, setters, or Angular framework behavior.
 
 ## Security and privacy
 
+### Authentication
+
+**The app requires no authentication to run.** It uses the public GitHub Search API, which allows
+unauthenticated requests out of the box.
+
+A Personal Access Token (PAT) is an *optional development aid* — not a functional dependency:
+
+| Scenario | Rate limit |
+|---|---|
+| No token (default) | ~10 search requests/min |
+| Token set in `environment.local.ts` | 5,000 requests/hr |
+
+The token support was introduced in Step 3 — the first step that makes live API calls — and is
+implemented as a pass-through interceptor that does nothing when `githubToken` is empty. It is
+intended for local development and demos where you want to browse the list without hitting
+GitHub's unauthenticated limits. Never hardcode a token in any tracked file.
+
 | Concern | Decision |
 |---|---|
-| GitHub token | Never hardcoded. Local gitignored file or deployment secrets only. |
-| Token transmission | Bearer header to `api.github.com` only. Never stored, never logged. |
-| `localStorage` | `{ [repoId]: starRating }` only — no PII, minimal footprint |
-| External data | Public GitHub API only — no user data collected or transmitted |
-| Font loading | Google Fonts at runtime — self-host in production for privacy + performance |
+| GitHub token | Optional. Never hardcoded. Local gitignored file or deployment secrets only. |
+| Token transmission | Bearer header to `api.github.com` only — never stored, never logged. |
+| `localStorage` | `{ [repoId]: starRating }` only — no PII, minimal footprint. |
+| External data | Public GitHub API only — no user data collected or transmitted. |
+| Font loading | Google Fonts at runtime — self-host in production for privacy + performance. |
 
 ---
 
@@ -277,6 +294,6 @@ No tests for trivial getters, setters, or Angular framework behavior.
 | Signals over NgRx | Less ceremony; would need NgRx if app grew to multi-feature shared state |
 | Single facade | Slightly larger class than pure SRP; justified by test simplicity and readability |
 | CDK Dialog | More opinionated API; accessibility correctness is worth it |
-| No backend proxy | Exposes rate limiting to unauthenticated users; token env var mitigates |
+| No backend proxy | Unauthenticated users hit GitHub's ~10 req/min search limit. Optional PAT support (Step 3) mitigates this during development. |
 | `localStorage` for ratings | Simple, no server dep; ratings lost on browser data clear |
 | Inter via Google Fonts | Dev convenience; should self-host in production |
