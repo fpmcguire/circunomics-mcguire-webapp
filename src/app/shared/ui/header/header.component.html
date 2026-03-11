@@ -1,0 +1,29 @@
+<header class="app-header" role="banner">
+  <div class="app-header__inner">
+    <a routerLink="/" class="app-header__brand" aria-label="Circunomics – home">
+      <!-- Wordmark SVG inline so it scales cleanly with CSS and needs no image request -->
+      <svg
+        class="app-header__logo"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" />
+        <path
+          d="M8 12a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z"
+          stroke="currentColor"
+          stroke-width="1.5"
+        />
+        <path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+      </svg>
+      <span class="app-header__name">Circunomics</span>
+    </a>
+
+    <nav class="app-header__nav" aria-label="Main navigation">
+      <a routerLink="/" class="app-header__nav-link" aria-current="page">
+        Trending Repos
+      </a>
+    </nav>
+  </div>
+</header>

@@ -1,25 +1,33 @@
-import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { render, screen } from '@testing-library/angular';
 import { App } from './app';
+import { routes } from './app.routes';
 
-describe('App', () => {
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [App],
-    }).compileComponents();
+describe('App shell', () => {
+  it('renders the site header with brand name', async () => {
+    await render(App, {
+      providers: [
+        provideRouter(routes),
+        provideHttpClient(),
+        provideAnimationsAsync(),
+      ],
+    });
+
+    expect(screen.getByRole('banner')).toBeInTheDocument();
+    expect(screen.getByLabelText('Circunomics – home')).toBeInTheDocument();
   });
 
-  it('should create the app', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
-  });
+  it('renders the main content landmark', async () => {
+    await render(App, {
+      providers: [
+        provideRouter(routes),
+        provideHttpClient(),
+        provideAnimationsAsync(),
+      ],
+    });
 
-  it('should render title', async () => {
-    const fixture = TestBed.createComponent(App);
-    await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain(
-      'Hello, circunomics-mcguire-webapp',
-    );
+    expect(screen.getByRole('main')).toBeInTheDocument();
   });
 });

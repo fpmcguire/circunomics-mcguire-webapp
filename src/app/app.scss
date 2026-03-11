@@ -1,0 +1,14 @@
+.app-main {
+  padding: var(--space-8) var(--space-6);
+
+  &__container {
+    max-width: var(--content-max-width);
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-main {
+    padding: var(--space-6) var(--space-4);
+  }
+}
