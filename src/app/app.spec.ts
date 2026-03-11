@@ -8,11 +8,7 @@ import { routes } from './app.routes';
 describe('App shell', () => {
   it('renders the site header with brand name', async () => {
     await render(App, {
-      providers: [
-        provideRouter(routes),
-        provideHttpClient(),
-        provideAnimationsAsync(),
-      ],
+      providers: [provideRouter(routes), provideHttpClient(), provideAnimationsAsync()],
     });
 
     expect(screen.getByRole('banner')).toBeInTheDocument();
@@ -21,11 +17,7 @@ describe('App shell', () => {
 
   it('renders the main content landmark', async () => {
     await render(App, {
-      providers: [
-        provideRouter(routes),
-        provideHttpClient(),
-        provideAnimationsAsync(),
-      ],
+      providers: [provideRouter(routes), provideHttpClient(), provideAnimationsAsync()],
     });
 
     expect(screen.getByRole('main')).toBeInTheDocument();
