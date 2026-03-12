@@ -33,8 +33,8 @@
   }
 
   &__logo {
-    /* Wordmark SVG — height constrained to header; aspect ratio preserved via auto width */
-    height: 28px;
+    /* Wordmark SVG — height matches nav link: font-size × line-height + top/bottom padding */
+    height: calc(var(--leading-normal) * var(--text-sm) + 2 * var(--space-2));
     width: auto;
     flex-shrink: 0;
     display: block;

@@ -67,15 +67,12 @@ Test features working together as a user would experience them. Use `render()` f
 
 **Example — facade integration test:**
 ```typescript
-it('appends repos from the next page', () => {
-  const { facade } = setup([
-    makePage([makeRepo(1), makeRepo(2)]),
-    makePage([makeRepo(3), makeRepo(4)], true),
-  ]);
+it('advances to page 2 and shows the correct slice', () => {
+  const { facade } = setup([makePage(makeRepos(1, 10)), makePage(makeRepos(11, 5), true)]);
   facade.loadInitial();
-  facade.loadNextPage();
-  expect(facade.repos()).toHaveLength(4);
-  expect(facade.hasMore()).toBe(false);
+  facade.goToNextPage();
+  expect(facade.visiblePage()).toBe(2);
+  expect(facade.visibleRepos()).toHaveLength(5);
 });
 ```
 
@@ -92,11 +89,13 @@ it('renders the retry button when error is set', async () => {
 
 3–5 tests covering the journeys that must work before every release. No more.
 
-**E2E tests for this app (Step 7):**
+**E2E tests for this app:**
 1. Initial page load shows trending repos
-2. Scrolling to the bottom loads the next page
-3. Clicking a repo name → modal opens → rating → close → star visible in list
-4. GitHub API error state is shown when the API fails
+2. Pagination navigation (Next/Previous, range indicator, page indicator)
+3. Clicking a repo name → modal opens → rating → save → star visible in list; dismiss paths do not commit rating
+4. GitHub API error state is shown; retry re-fetches successfully
+
+All tests use `page.route()` to intercept GitHub API calls — deterministic, no live network required.
 
 **Skip E2E for:**
 - Edge cases and error states (cover in integration tests)
@@ -162,7 +161,8 @@ trending-repos.facade.spec.ts    ← integration test (primary coverage)
 E2E tests live in `e2e/`:
 ```
 e2e/
-  trending-repos.spec.ts         ← critical user journey tests (Step 7)
+  helpers.ts                     ← mock data factory + page.route() interceptors
+  trending-repos.spec.ts         ← critical user journey tests
 ```
 
 ---
@@ -219,12 +219,16 @@ npm run e2e:ui        # Playwright interactive UI
 | `github-repo.mapper.spec.ts` | 5 | Unit — domain mapper |
 | `github-trending-repos.repository.spec.ts` | 12 | Integration — HTTP, errors, dedup |
 | `rating-persistence.service.spec.ts` | 8 | Unit — localStorage validation |
-| `trending-repos.facade.spec.ts` | 27 | Integration — all facade flows |
-| `repo-card.component.spec.ts` | 11 | Integration — card rendering + interactions |
-| `repo-list.component.spec.ts` | 17 | Integration — list states + events |
-| **Total** | **91** | |
+| `trending-repos.facade.spec.ts` | 38 | Integration — all facade flows |
+| `repo-card.component.spec.ts` | 12 | Integration — card rendering + interactions |
+| `repo-list.component.spec.ts` | 15 | Integration — list states + events |
+| `repo-pagination.component.spec.ts` | 15 | Integration — pagination controls |
+| `star-rating.component.spec.ts` | 10 | Integration — rating widget |
+| `repo-details-dialog.component.spec.ts` | 18 | Integration — dialog rendering + save/dismiss |
+| **Total** | **143** | |
 
-E2E tests added in Step 7.
+**E2E (Playwright):** 17 tests across 4 scenarios in `e2e/trending-repos.spec.ts`.
+All GitHub API calls mocked via `page.route()` — no live network required.
 
 ---
 

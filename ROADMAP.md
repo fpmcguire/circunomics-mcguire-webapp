@@ -141,7 +141,7 @@
 
 **TrendingReposFacade** `application/facades/trending-repos.facade.ts`:
 - Public signals: `repos`, `isLoading`, `isLoadingMore`, `error`, `hasMore`, `totalCount`, `currentPage`, `ratings`, `isEmpty`
-- Actions: `loadInitial()`, `loadNextPage()`, `retry()`, `setRating()`, `getRating()`
+- Actions: `loadInitial()`, `goToNextPage()`, `goToPreviousPage()`, `retry()`, `setRating()`, `getRating()`
 - Concurrent fetch guard via `isFetching` boolean
 - `_lastAttemptedPage` — `retry()` replays the exact failed page, not `currentPage + 1`
 - ID-based deduplication on page merge

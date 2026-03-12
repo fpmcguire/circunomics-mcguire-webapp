@@ -13,7 +13,7 @@ testable without over-engineering a single-feature application.
 ```
 src/
 ├── environments/
-│   ├── environment.ts               # Dev config (token placeholder — do not commit real tokens)
+│   ├── environment.ts               # Dev config — add local override for optional GitHub token
 │   └── environment.prod.ts          # Prod config (token via deployment secrets)
 │
 ├── styles/                          # Global SCSS design system
@@ -57,15 +57,15 @@ src/
             │
             ├── application/         # Orchestration — coordinates domain + infra
             │   ├── facades/
-            │   │   └── trending-repos.facade.ts   # (Step 4) Signal-based state + actions
+            │   │   └── trending-repos.facade.ts   # Signal-based state + actions
             │   └── state/
-            │       └── trending-repos.state.ts    # (Step 4) Supporting state types
+            │       └── trending-repos.state.ts    # Supporting state types
             │
             └── ui/                  # Presentation layer — Angular components only
                 ├── pages/
                 │   └── trending-repos-page/       # Routable page — injects facade
-                ├── components/                    # (Steps 5–6) RepoList, RepoCard, StarRating
-                └── dialogs/                       # (Step 6) RepoDetailsDialog via CDK
+                ├── components/                    # RepoList, RepoCard, RepoPagination, StarRating
+                └── dialogs/                       # RepoDetailsDialog via CDK Dialog
 ```
 
 ---
@@ -110,8 +110,6 @@ Responsible for talking to the outside world. Implements the domain contract.
 ---
 
 ### Application layer (facade)
-
-*(Implemented in Step 4)*
 
 The single orchestration point between infrastructure and UI. Components never call the
 repository directly.
@@ -261,9 +259,9 @@ Accessibility is a structural concern, built in from the start — not a retrofi
 |---|---|
 | Modal | CDK Dialog — focus trap, Escape key, `aria-modal="true"`, `aria-labelledby` |
 | Star rating | Radio group — fully keyboard navigable, screen-reader labelled |
-| Infinite scroll sentinel | Removed in Step 5.5 — replaced by explicit pagination controls |
+| Infinite scroll sentinel | Removed — replaced by explicit Previous/Next pagination controls |
 | Pagination controls | `<nav aria-label="Repository list pagination">` with real `<button>` elements; Previous/Next have descriptive `aria-label`; disabled state conveyed via `disabled` attribute |
-| Loading/error announcements | `aria-live="polite"` region (Step 5) |
+| Loading/error announcements | `aria-live="polite"` region in the repo list |
 | Skip link | First focusable element in `index.html` — targets `#main-content` |
 | Focus ring | `:focus-visible` in global reset — always shown for keyboard users |
 | Reduced motion | `@media (prefers-reduced-motion: reduce)` in skeleton + transitions |
@@ -301,10 +299,10 @@ A Personal Access Token (PAT) is an *optional development aid* — not a functio
 | No token (default) | ~10 search requests/min |
 | Token set in `environment.local.ts` | 5,000 requests/hr |
 
-The token support was introduced in Step 3 — the first step that makes live API calls — and is
-implemented as a pass-through interceptor that does nothing when `githubToken` is empty. It is
-intended for local development and demos where you want to browse the list without hitting
-GitHub's unauthenticated limits. Never hardcode a token in any tracked file.
+The app works fully without a token. An optional Personal Access Token raises the limit to
+5,000 requests/hr and is useful during development or demos. It is implemented as a pass-through
+interceptor (`github-auth.interceptor.ts`) that does nothing when `githubToken` is empty. Never
+hardcode a token in any tracked file.
 
 | Concern | Decision |
 |---|---|
@@ -323,6 +321,6 @@ GitHub's unauthenticated limits. Never hardcode a token in any tracked file.
 | Signals over NgRx | Less ceremony; would need NgRx if app grew to multi-feature shared state |
 | Single facade | Slightly larger class than pure SRP; justified by test simplicity and readability |
 | CDK Dialog | More opinionated API; accessibility correctness is worth it |
-| No backend proxy | Unauthenticated users hit GitHub's ~10 req/min search limit. Optional PAT support (Step 3) mitigates this during development. |
+| No backend proxy | Unauthenticated users hit GitHub's ~10 req/min search limit. Optional PAT (gitignored local file) mitigates this during development. |
 | `localStorage` for ratings | Simple, no server dep; ratings lost on browser data clear |
 | Inter via Google Fonts | Dev convenience; should self-host in production |
