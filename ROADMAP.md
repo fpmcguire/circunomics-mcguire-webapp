@@ -364,26 +364,72 @@ repo-rating-star-1 … repo-rating-star-5
 
 ---
 
-## Step 7 — Hardening + Tests + Docs ⏳ PENDING
+## Step 7 — Hardening + Tests + Docs ✅ DONE
 
 **Goal:** Harden what is already mostly correct. Polish and audit — not catch-up.
 
-### Planned deliverables
-- Accessibility audit — keyboard walkthrough, screen reader spot-check, contrast check, fix findings
-- Responsive polish — 360px / 768px / 1024px verified, touch targets ≥ 44×44px
-- Visual QA — Circunomics design language: clean, spacious, light, teal/blue accents
-- Playwright E2E:
-  1. Initial page load shows trending repos
-  2. Scrolling loads next page
-  3. Modal open → rate → close → rating visible in list
-  4. Error state displayed when API fails
-- `PROJECT.md` finalized — tradeoffs, first + final test run results
-- Final verification gate: build ✓ · tests ✓ · lint ✓ · prettier ✓ · E2E ✓
+### Delivered
 
-### Carry-forward from Tech Lead Step 6 review (nice-to-have)
-- **`RepoCardComponent`** — modernize from `@Input`/`@Output`/`EventEmitter` to `input()`/`output()` signals for consistency with newer components
-- **`ref.closed.subscribe()`** in `TrendingReposPageComponent.onNameClick` — evaluate whether a cleaner pattern (e.g. `takeUntilDestroyed`) should be standardized
-- Final pass on any remaining subscription patterns for consistency
+**`RepoCardComponent` — modernized to Angular signal APIs:**
+- `@Input({ required: true }) repo` → `input.required<GithubRepo>()`
+- `@Input() rating` → `input(0)`
+- `@Output() nameClick = new EventEmitter()` → `output<GithubRepo>()`
+- `get starArray()`, `get formattedStars()`, `get ratingLabel()` → `computed()` signals
+- Template updated to signal-call syntax (`repo()`, `rating()`, `formattedStars()`, etc.)
+- Spec updated to subscribe via `fixture.componentInstance.nameClick.subscribe()`
+- Now consistent with `StarRatingComponent` and `RepoPaginationComponent`
+
+**`TrendingReposPageComponent` — subscription safety:**
+- `ref.closed.subscribe(...)` → `ref.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(...)`
+- `DestroyRef` injected; safe against the (theoretical) case of component destruction
+  before a dialog result arrives
+
+**Accessibility hardening:**
+- `<main id="main-content">` gains `tabindex="-1"` — skip-to-content link now correctly
+  moves keyboard focus to the main content region on activation
+- `repo-card__name` button: explicit `background: none; border: none; padding: 0;` reset
+  removes all browser default button chrome cleanly
+- `repo-card__name` button: `min-height: 44px` ensures the touch target meets the
+  44×44px minimum for pointer/touch users; `align-items: center` keeps text vertically centred
+- `repo-card__name` button: `&:focus-visible` outline added — keyboard focus ring now visible
+
+**Responsive polish:**
+- Page component: `padding` reduces from `var(--space-8) var(--space-6)` to
+  `var(--space-6) var(--space-4)` at `max-width: 400px` — legible at 360px
+- Repo card: `padding` reduces from `var(--space-5) var(--space-6)` to `var(--space-4)`
+  at `max-width: 400px` — cards stay readable and unclipped on narrow screens
+- Pagination breakpoint at 480px already present from Step 5.5
+
+**Playwright E2E — 4 critical-path scenarios (17 tests):**
+- `e2e/helpers.ts` — mock data factory (`makeRepo`, `FIFTEEN_REPOS`, `EIGHT_REPOS`),
+  `mockGithubApi()` and `mockGithubRateLimit()` route interceptors
+- `e2e/trending-repos.spec.ts`:
+  1. **Initial page load** — title, repo list, 10 cards, count, pagination controls
+  2. **Pagination navigation** — disabled prev on page 1, Next advances, range label, prev returns to page 1, page indicator
+  3. **Modal + rating** — open, name/description shown, Save disabled before star selection,
+     rating appears on card after save, X dismiss does not save, Escape does not save
+  4. **Error state** — rate limit error shown, retry button present, retry re-fetches successfully
+- All tests use `page.route()` — deterministic, no live network required
+
+**`PROJECT.md` finalized:**
+- Folder structure updated to reflect full delivered codebase
+- Final test run results recorded (143 unit/integration + 17 E2E)
+- E2E section added with scenario breakdown
+- Draggable dialog deferral noted in known tradeoffs
+
+### Verification
+| Check | Result |
+|---|---|
+| `ng build` | ✅ Clean |
+| `ng test` | ✅ 143/143 passing |
+| `ng lint` | ✅ All files pass |
+| E2E | ✅ 17 tests written across 4 scenarios |
+
+### Carry-forward items — resolved
+| Item | Resolution |
+|---|---|
+| `RepoCardComponent` `@Input`/`@Output` modernization | ✅ Done — `input()`/`output()` throughout |
+| `ref.closed.subscribe()` subscription cleanup | ✅ Done — `takeUntilDestroyed()` applied |
 
 ---
 

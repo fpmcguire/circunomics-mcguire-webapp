@@ -1,21 +1,14 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  EventEmitter,
-  Input,
-  Output,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { GithubRepo } from '../../../domain/models/github-repo.model';
 
 /**
  * RepoCardComponent
  *
  * Presentational card for a single trending repository.
- * Emits `nameClick` when the repo name is activated — the page component
- * passes this to the detail dialog in Step 6.
+ * Emits `nameClick` when the repo name button is activated — the page component
+ * passes this to the detail dialog.
  *
- * Read-only star rating display only in Step 5. Interactive rating lives in
- * the dialog (Step 6).
+ * Read-only star rating display — interactive rating lives in the dialog.
  */
 @Component({
   selector: 'app-repo-card',
@@ -24,26 +17,26 @@ import { GithubRepo } from '../../../domain/models/github-repo.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RepoCardComponent {
-  @Input({ required: true }) repo!: GithubRepo;
-  @Input() rating = 0;
-  @Output() nameClick = new EventEmitter<GithubRepo>();
+  readonly repo = input.required<GithubRepo>();
+  readonly rating = input(0);
+
+  readonly nameClick = output<GithubRepo>();
 
   /** Array of 5 booleans for rendering filled/empty stars. */
-  get starArray(): boolean[] {
-    return Array.from({ length: 5 }, (_, i) => i < this.rating);
-  }
+  protected readonly starArray = computed(() =>
+    Array.from({ length: 5 }, (_, i) => i < this.rating()),
+  );
 
-  get formattedStars(): string {
-    return this.repo.stars >= 1000
-      ? `${(this.repo.stars / 1000).toFixed(1)}k`
-      : String(this.repo.stars);
-  }
+  protected readonly formattedStars = computed(() => {
+    const n = this.repo().stars;
+    return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
+  });
 
-  get ratingLabel(): string {
-    return this.rating > 0 ? `Rated ${this.rating} out of 5 stars` : 'Not yet rated';
-  }
+  protected readonly ratingLabel = computed(() =>
+    this.rating() > 0 ? `Rated ${this.rating()} out of 5 stars` : 'Not yet rated',
+  );
 
-  onNameClick(): void {
-    this.nameClick.emit(this.repo);
+  protected onNameClick(): void {
+    this.nameClick.emit(this.repo());
   }
 }

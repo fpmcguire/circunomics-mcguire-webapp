@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgTemplateOutlet } from '@angular/common';
 import { Dialog } from '@angular/cdk/dialog';
 
@@ -23,6 +24,7 @@ import {
 export class TrendingReposPageComponent implements OnInit {
   readonly facade = inject(TrendingReposFacade);
   private readonly dialog = inject(Dialog);
+  private readonly destroyRef = inject(DestroyRef);
 
   ngOnInit(): void {
     this.facade.loadInitial();
@@ -51,7 +53,7 @@ export class TrendingReposPageComponent implements OnInit {
       },
     );
 
-    ref.closed.subscribe((result) => {
+    ref.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
       if (result && result.stars > 0) {
         this.facade.setRating(repo.id, result.stars);
       }

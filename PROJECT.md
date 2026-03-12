@@ -14,7 +14,7 @@ Feature-driven, layered architecture — organized by feature first, then by tec
 within each feature. Keeps related logic co-located, makes each feature self-contained, and
 scales cleanly without DDD ceremony.
 
-### Current folder structure (after Step 3)
+### Folder structure
 
 ```
 src/
@@ -28,12 +28,11 @@ src/
 │   └── _utilities.scss              # .sr-only, .skeleton shimmer, .badge, .icon-btn
 └── app/
     ├── app.ts                       # Root component — shell layout only
-    ├── app.html                     # <app-header> + <main> + <router-outlet>
+    ├── app.html                     # <app-header> + <main> + <footer> + <router-outlet>
     ├── app.config.ts                # provideHttpClient, interceptor, repository binding
     ├── app.routes.ts                # Lazy route → trending-repos page
     │
     ├── core/
-    │   ├── config/                  # (reserved — app-level constants)
     │   ├── services/
     │   │   └── github-auth.interceptor.ts   # Injects optional Bearer token for api.github.com
     │   └── utils/
@@ -42,10 +41,9 @@ src/
     ├── shared/
     │   ├── models/
     │   │   └── app-error.model.ts           # Typed AppError discriminated union + factory fns
-    │   ├── ui/
-    │   │   └── header/                      # Sticky app header, router-aware nav
-    │   ├── directives/              # (reserved)
-    │   └── pipes/                   # (reserved)
+    │   └── ui/
+    │       ├── header/                      # Sticky app header, router-aware nav
+    │       └── footer/                      # App footer — version, GitHub link, author
     │
     └── features/
         └── trending-repos/
@@ -59,19 +57,27 @@ src/
             │
             ├── infrastructure/
             │   ├── datasources/
-            │   │   └── github-api.types.ts          # Raw GitHub API response shapes (infra only)
+            │   │   ├── github-api.types.ts          # Raw GitHub API response shapes (infra only)
+            │   │   └── rating-persistence.service.ts# localStorage rating store
             │   └── repositories/
             │       └── github-trending-repos.repository.ts  # HttpClient implementation
             │
             ├── application/
-            │   ├── facades/         # (Step 4 — TrendingReposFacade)
-            │   └── state/           # (Step 4 — supporting state types)
+            │   ├── facades/
+            │   │   └── trending-repos.facade.ts     # Single orchestration point for the feature
+            │   └── state/
+            │       └── trending-repos.state.ts      # State snapshot interface + INITIAL_STATE
             │
             └── ui/
                 ├── pages/
-                │   └── trending-repos-page/   # TrendingReposPageComponent
-                ├── components/      # RepoCardComponent, RepoListComponent (Step 6 adds StarRating)
-                └── dialogs/         # (Step 6 — RepoDetailsDialogComponent)
+                │   └── trending-repos-page/         # TrendingReposPageComponent
+                ├── components/
+                │   ├── repo-card/                   # Presentational repo card
+                │   ├── repo-list/                   # List + all UI states (skeleton, error, empty)
+                │   ├── repo-pagination/              # Previous/Next pagination controls
+                │   └── star-rating/                 # Interactive 5-star rating (radio-group pattern)
+                └── dialogs/
+                    └── repo-details-dialog/         # CDK Dialog — full repo details + rating
 ```
 
 ### Key layering rule
@@ -93,7 +99,7 @@ GithubTrendingReposRepository (infrastructure)
 ### State management
 
 Angular signals — no NgRx. For a single-feature app, signals give the same unidirectional data
-flow with far less boilerplate. The facade exposes two layers of pagination state:
+flow with far less boilerplate. The facade exposes two strictly separated layers of pagination state:
 
 **API pagination state** (GitHub fetch tracking):
 `repos`, `isLoading`, `isLoadingMore`, `error`, `hasMore`, `currentPage`, `totalCount`, `ratings`
@@ -101,7 +107,8 @@ flow with far less boilerplate. The facade exposes two layers of pagination stat
 **UI pagination state** (visible slice):
 `visiblePage`, `visibleRepos`, `visibleRangeStart`, `visibleRangeEnd`, `totalLoaded`, `canGoNext`, `canGoPrevious`
 
-These two layers are strictly separated — see Architecture for the API page vs UI page distinction.
+A single API page (up to 100 repos) fills many UI pages (10 repos each). Additional API pages are
+fetched on demand only when the user navigates beyond what is already cached in memory.
 
 All signals are consumed directly by components; no component manages its own pagination state.
 
@@ -111,14 +118,14 @@ All signals are consumed directly by components; no component manages its own pa
 
 | Library | Reason |
 |---|---|
-| `@angular/cdk` | Accessible Dialog — focus trap, Escape, `aria-modal` |
+| `@angular/cdk` | Accessible Dialog — focus trap, Escape, `aria-modal`, focus restoration |
 | `@angular/animations` | Required by CDK and `provideAnimationsAsync()` |
 | `@testing-library/angular` | Integration tests — test user behavior, not implementation details |
 | `@testing-library/user-event` | Realistic user interaction simulation in tests |
 | `@testing-library/jest-dom` | Expressive DOM matchers (`toBeVisible`, `toHaveTextContent`, etc.) |
 | `eslint` + `angular-eslint` | Linting with Angular-specific rules, ESLint 10 flat config |
 | `prettier` | Consistent code formatting |
-| `@playwright/test` | Critical-path E2E coverage (Steps 5–7) |
+| `@playwright/test` | Critical-path E2E coverage — 4 scenarios, GitHub API mocked via `page.route()` |
 
 ---
 
@@ -149,7 +156,7 @@ npm run test:watch    # Tests in watch mode
 npm run lint          # ESLint
 npm run format        # Prettier write
 npm run format:check  # Prettier check (CI-safe)
-npm run e2e           # Playwright E2E tests
+npm run e2e           # Playwright E2E tests (requires dev server: npm start)
 npm run e2e:ui        # Playwright interactive UI
 ```
 
@@ -165,22 +172,36 @@ Duration    6.80s
 ```
 *Both tests were the Angular starter placeholder tests, replaced in Step 2.*
 
-### Step 4 corrections run
+### Final run — Step 7
 ```
-Test Files  4 passed (4)
-Tests       62 passed (62)
-Duration    9.41s
+Test Files  11 passed (11)
+Tests       143 passed (143)
+Duration    10.17s
 ```
 
-| File | Tests | Type |
+| File | Tests | Layer |
 |---|---|---|
 | `app.spec.ts` | 2 | Integration — shell landmarks |
-| `github-query.utils.spec.ts` | 8 | Unit — date/query builder |
+| `github-query.utils.spec.ts` | 8 | Unit — UTC date/query builder |
 | `github-repo.mapper.spec.ts` | 5 | Unit — domain mapper |
-| `github-trending-repos.repository.spec.ts` | 12 | Integration — HTTP, errors, deduplication |
+| `github-trending-repos.repository.spec.ts` | 12 | Integration — HTTP, all error kinds, deduplication |
+| `rating-persistence.service.spec.ts` | 8 | Unit — localStorage validation + recovery |
+| `trending-repos.facade.spec.ts` | 38 | Integration — all facade flows, pagination, ratings |
+| `repo-card.component.spec.ts` | 12 | Component — card rendering, output, a11y |
+| `repo-list.component.spec.ts` | 15 | Component — all UI states |
+| `repo-pagination.component.spec.ts` | 15 | Component — pagination controls |
+| `star-rating.component.spec.ts` | 10 | Component — rendering, hover, interaction |
+| `repo-details-dialog.component.spec.ts` | 18 | Component — dialog rendering, save vs dismiss |
 
-### Final run
-*115 tests passing across 9 files as of Step 5.5. Updated after Step 7 is complete.*
+### E2E — Playwright (4 scenarios, 17 tests)
+```
+e2e/trending-repos.spec.ts
+  ├── Initial page load (6 tests)
+  ├── Pagination navigation (5 tests)
+  ├── Repo details modal and rating (6 tests)
+  └── Error state (4 tests)
+```
+*E2E tests use `page.route()` to intercept GitHub API calls — no live network required.*
 
 ---
 
@@ -189,7 +210,8 @@ Duration    9.41s
 | Tradeoff | Notes |
 |---|---|
 | Signals over NgRx | Correct for this scope. Revisit if app grows to multi-feature shared state. |
-| No backend proxy | Unauthenticated users hit GitHub's ~10 req/min search limit. Optional PAT (Step 3) mitigates during development and demos. |
+| No backend proxy | Unauthenticated users hit GitHub's ~10 req/min search limit. Optional PAT mitigates during development and demos. |
 | Single lazy route chunk | Fine now. Split further if more features are added. |
 | Google Fonts at runtime | Convenient for development. Self-host in production for privacy + performance. |
 | `localStorage` for ratings | Simple, no server dependency. Ratings are lost on browser data clear. |
+| Draggable dialog deferred | CDK DragDrop drag-to-reposition was intentionally not implemented. Accessibility and focus behaviour take priority; drag can be added if it can be proven regression-free. |

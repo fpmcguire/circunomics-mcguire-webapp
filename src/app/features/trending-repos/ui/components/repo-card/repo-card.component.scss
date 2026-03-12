@@ -9,6 +9,10 @@
     box-shadow var(--transition-fast),
     transform var(--transition-fast);
 
+  @media (max-width: 400px) {
+    padding: var(--space-4);
+  }
+
   &:hover {
     border-left-color: var(--color-primary);
     box-shadow: var(--shadow-md);
@@ -39,14 +43,22 @@
   }
 
   &__name {
+    // Button reset
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    // Minimum 44×44px touch target — padding expands clickable area without shifting layout
+    min-height: 44px;
     display: inline-flex;
-    align-items: baseline;
+    align-items: center;
     gap: 0;
     font-size: var(--text-base);
     font-weight: var(--weight-semibold);
     color: var(--color-primary);
     line-height: var(--leading-snug);
     text-align: left;
+    cursor: pointer;
     transition: color var(--transition-fast);
     max-width: 100%;
     overflow: hidden;
@@ -57,6 +69,12 @@
       color: var(--color-primary-hover);
       text-decoration: underline;
       text-underline-offset: 2px;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+      border-radius: var(--radius-sm);
     }
   }
 

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { RepoCardComponent } from './repo-card.component';
 import { GithubRepo } from '../../../domain/models/github-repo.model';
 
@@ -94,13 +94,16 @@ describe('RepoCardComponent', () => {
   describe('nameClick output', () => {
     it('emits the repo when the name button is clicked', async () => {
       const user = userEvent.setup();
-      const onNameClick = vi.fn();
-      await render(RepoCardComponent, {
+      const { fixture } = await render(RepoCardComponent, {
         componentInputs: { repo: makeRepo(), rating: 0 },
-        on: { nameClick: onNameClick },
       });
+      const emitted: GithubRepo[] = [];
+      fixture.componentInstance.nameClick.subscribe((r: GithubRepo) => emitted.push(r));
+
       await user.click(screen.getByTestId('trending-repos-list-item-name-button'));
-      expect(onNameClick).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
+
+      expect(emitted).toHaveLength(1);
+      expect(emitted[0]).toMatchObject({ id: 1 });
     });
   });
 
