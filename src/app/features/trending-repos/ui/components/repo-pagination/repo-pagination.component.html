@@ -1,65 +1,46 @@
-<nav
-  class="pagination"
-  aria-label="Repository list pagination"
-  data-testid="trending-repos-pagination"
->
+<nav class="pagination" aria-label="Repository list pagination" data-testid="trending-repos-pagination">
   <div class="pagination__info">
     @if (totalLoaded > 0) {
-      <span
-        class="pagination__range"
-        aria-live="polite"
-        aria-atomic="true"
-        data-testid="trending-repos-pagination-range-indicator"
-      >
-        Showing {{ rangeStart }}–{{ rangeEnd }} of {{ totalLoaded }} loaded
-      </span>
+    <span class="pagination__range" aria-live="polite" aria-atomic="true"
+      data-testid="trending-repos-pagination-range-indicator">
+      Showing {{ rangeStart }}–{{ rangeEnd }} of {{ totalLoaded }} loaded
+    </span>
     }
-    <span
-      class="pagination__page-label"
-      data-testid="trending-repos-pagination-page-indicator"
-    >
+    <span class="pagination__page-label" data-testid="trending-repos-pagination-page-indicator">
       Page {{ currentPage }}
     </span>
   </div>
 
   <div class="pagination__controls">
-    <button
-      class="pagination__btn pagination__btn--prev"
-      type="button"
-      aria-label="Go to previous page"
-      data-testid="trending-repos-pagination-prev-button"
-      [disabled]="!canGoPrevious"
-      (click)="previousClick.emit()"
-    >
+    @if (currentPage > 1) {
+    <button class="pagination__btn pagination__btn--top" type="button" aria-label="Go to first page"
+      data-testid="trending-repos-pagination-top-button" (click)="topClick.emit()">
+      ^ Top
+    </button>
+    }
+
+    <button class="pagination__btn pagination__btn--prev" type="button" aria-label="Go to previous page"
+      data-testid="trending-repos-pagination-prev-button" [disabled]="!canGoPrevious" (click)="previousClick.emit()">
       <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
-        <path
-          fill-rule="evenodd"
-          d="M9.78 4.22a.75.75 0 0 1 0 1.06L7.06 8l2.72 2.72a.75.75 0 1 1-1.06 1.06L5.47 8.53a.75.75 0 0 1 0-1.06l3.25-3.25a.75.75 0 0 1 1.06 0Z"
-        />
+        <path fill-rule="evenodd"
+          d="M9.78 4.22a.75.75 0 0 1 0 1.06L7.06 8l2.72 2.72a.75.75 0 1 1-1.06 1.06L5.47 8.53a.75.75 0 0 1 0-1.06l3.25-3.25a.75.75 0 0 1 1.06 0Z" />
       </svg>
       Previous
     </button>
 
-    <button
-      class="pagination__btn pagination__btn--next"
-      type="button"
-      aria-label="Go to next page"
-      data-testid="trending-repos-pagination-next-button"
-      [disabled]="!canGoNext || isLoadingMore"
-      (click)="nextClick.emit()"
-    >
+    <button class="pagination__btn pagination__btn--next" type="button" aria-label="Go to next page"
+      data-testid="trending-repos-pagination-next-button" [disabled]="!canGoNext || isLoadingMore"
+      (click)="nextClick.emit()">
       @if (isLoadingMore) {
-        <span class="pagination__spinner" aria-hidden="true"></span>
-        <span class="sr-only">Loading next page…</span>
-        Loading…
+      <span class="pagination__spinner" aria-hidden="true"></span>
+      <span class="sr-only">Loading next page…</span>
+      Loading…
       } @else {
-        Next
-        <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
-          <path
-            fill-rule="evenodd"
-            d="M6.22 4.22a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06l-3.25 3.25a.75.75 0 0 1-1.06-1.06L8.94 8 6.22 5.28a.75.75 0 0 1 0-1.06Z"
-          />
-        </svg>
+      Next
+      <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
+        <path fill-rule="evenodd"
+          d="M6.22 4.22a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06l-3.25 3.25a.75.75 0 0 1-1.06-1.06L8.94 8 6.22 5.28a.75.75 0 0 1 0-1.06Z" />
+      </svg>
       }
     </button>
   </div>

@@ -277,6 +277,28 @@ describe('TrendingReposFacade', () => {
       expect(facade.visiblePage()).toBe(1);
     });
 
+    it('goToFirstPage() jumps from a later UI page back to page 1', () => {
+      const repos = Array.from({ length: 15 }, (_, i) => makeRepo(i + 1));
+      const { facade } = setup([makePage(repos, true)]);
+      facade.loadInitial();
+      facade.goToNextPage();
+      expect(facade.visiblePage()).toBe(2);
+
+      facade.goToFirstPage();
+
+      expect(facade.visiblePage()).toBe(1);
+      expect(facade.visibleRepos()[0].id).toBe(1);
+    });
+
+    it('goToFirstPage() is a no-op when already on page 1', () => {
+      const { facade } = setup([makePage([makeRepo(1)])]);
+      facade.loadInitial();
+
+      facade.goToFirstPage();
+
+      expect(facade.visiblePage()).toBe(1);
+    });
+
     it('preserves ratings when navigating UI pages', () => {
       const repos = Array.from({ length: 15 }, (_, i) => makeRepo(i + 1));
       const persistence = persistenceStub({ 1: 5 });

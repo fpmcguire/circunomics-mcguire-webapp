@@ -242,6 +242,14 @@ export class TrendingReposFacade {
   }
 
   /**
+   * Jump directly to the first UI page (paginated mode).
+   */
+  goToFirstPage(): void {
+    if (this._uiPage() === 1) return;
+    this._uiPage.set(1);
+  }
+
+  /**
    * Retry after an error.
    * Replays the exact API page that failed, using the recorded _lastAttemptedPage.
    * If no page was ever attempted, defaults to page 1.

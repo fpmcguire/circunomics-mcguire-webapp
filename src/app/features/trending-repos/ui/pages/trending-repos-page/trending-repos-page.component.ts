@@ -71,6 +71,14 @@ export class TrendingReposPageComponent implements OnInit {
   }
 
   /**
+   * Return to the first paginated page and reset list scroll position.
+   */
+  onTopClick(): void {
+    this.facade.goToFirstPage();
+    this.listContainerRef.nativeElement.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /**
    * Opens the repo details dialog when a card name is clicked.
    *
    * CDK Dialog handles focus trap, Escape key, backdrop click, and focus

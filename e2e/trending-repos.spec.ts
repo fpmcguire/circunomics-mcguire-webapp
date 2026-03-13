@@ -164,6 +164,24 @@ test.describe('Pagination navigation', () => {
     await expect(page.getByTestId('trending-repos-list-item')).toHaveCount(10);
   });
 
+  test('Top button appears off page 1 and returns to page 1 when clicked', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByTestId('trending-repos-list')).toBeVisible();
+
+    const topButton = page.getByTestId('trending-repos-pagination-top-button').first();
+    const pageIndicator = page.getByTestId('trending-repos-pagination-page-indicator').first();
+
+    await expect(topButton).toHaveCount(0);
+
+    await page.getByTestId('trending-repos-pagination-next-button').first().click();
+    await expect(pageIndicator).toHaveText('Page 2');
+    await expect(topButton).toBeVisible();
+
+    await topButton.click();
+    await expect(pageIndicator).toHaveText('Page 1');
+    await expect(page.getByTestId('trending-repos-list-item')).toHaveCount(10);
+  });
+
   test('page indicator shows current page number', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByTestId('trending-repos-list')).toBeVisible();
