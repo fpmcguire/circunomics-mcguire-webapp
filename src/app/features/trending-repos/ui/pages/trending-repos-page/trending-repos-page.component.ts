@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DOCUMENT,
   DestroyRef,
   ElementRef,
   OnInit,
@@ -43,6 +44,7 @@ export class TrendingReposPageComponent implements OnInit {
   readonly facade = inject(TrendingReposFacade);
 
   private readonly dialog = inject(Dialog);
+  private readonly document = inject(DOCUMENT);
   private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
 
@@ -57,6 +59,10 @@ export class TrendingReposPageComponent implements OnInit {
   ngOnInit(): void {
     this._applyModeFromQueryParam();
     this.facade.loadInitial();
+
+    this.destroyRef.onDestroy(() => {
+      this.document.body.classList.remove('repo-details-open');
+    });
   }
 
   /** Called when the infinite-scroll sentinel enters the scroll viewport. */
@@ -81,7 +87,11 @@ export class TrendingReposPageComponent implements OnInit {
       },
     );
 
+    this.document.body.classList.add('repo-details-open');
+
     ref.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
+      this.document.body.classList.remove('repo-details-open');
+
       if (result && result.stars > 0) {
         this.facade.setRating(repo.id, result.stars);
       }

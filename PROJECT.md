@@ -82,9 +82,17 @@ src/
                     └── repo-details-dialog/         # CDK Dialog — full repo details + rating
 ```
 
-The `IntersectionObserverDirective` is a shared directive at `src/app/shared/directives/` — it
-accepts an `intersectionRoot` input so the sentinel fires relative to the scrollable list
-container rather than the browser viewport.
+Shared UI and directives at `src/app/shared/`:
+```
+shared/
+  ui/
+    header/          # HeaderComponent — router-aware nav + About button (injects CDK Dialog)
+    footer/          # FooterComponent
+    dialogs/
+      about-dialog/  # AboutDialogComponent — app-level CDK Dialog, purely presentational
+  directives/
+    intersection-observer.directive.ts  # IntersectionObserver with configurable root element
+```
 
 ### Key layering rule
 
@@ -194,16 +202,16 @@ Duration    6.80s
 ```
 *Both tests were the Angular starter placeholder tests, replaced in Step 2.*
 
-### Final run — Step 8
+### Final run — Step 9
 ```
-Test Files  13 passed (13)
-Tests       175 passed (175)
-Duration    28.71s
+Test Files  14 passed (14)
+Tests       184 passed (184)
+Duration    11.46s
 ```
 
 | File | Tests | Layer |
 |---|---|---|
-| `app.spec.ts` | 2 | Integration — shell landmarks |
+| `app.spec.ts` | 3 | Integration — shell landmarks, About button |
 | `github-query.utils.spec.ts` | 8 | Unit — UTC date/query builder |
 | `github-repo.mapper.spec.ts` | 5 | Unit — domain mapper |
 | `github-trending-repos.repository.spec.ts` | 12 | Integration — HTTP, all error kinds, deduplication |
@@ -216,6 +224,7 @@ Duration    28.71s
 | `repo-details-dialog.component.spec.ts` | 18 | Component — dialog rendering, save vs dismiss |
 | `display-mode-toggle.component.spec.ts` | 7 | Component — segmented control rendering + output |
 | `intersection-observer.directive.spec.ts` | 5 | Unit — IntersectionObserver directive |
+| `about-dialog.component.spec.ts` | 8 | Component — content sections, close behaviour, a11y |
 
 ### E2E — Playwright (5 scenarios, 24 tests)
 ```

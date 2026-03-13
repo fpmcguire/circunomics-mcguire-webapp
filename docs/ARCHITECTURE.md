@@ -34,9 +34,11 @@ src/
     │   ├── models/
     │   │   └── app-error.model.ts            # Typed AppError union + factory functions
     │   ├── ui/
-    │   │   └── header/                       # Sticky header — router-aware nav, accessible
-    │   ├── directives/              # Shared Angular directives (reserved)
-    │   └── pipes/                   # Shared Angular pipes (reserved)
+    │   │   ├── header/                       # Sticky header — router-aware nav, About button
+    │   │   ├── footer/                       # Site footer
+    │   │   └── dialogs/
+    │   │       └── about-dialog/             # AboutDialogComponent — CDK Dialog, app-level
+    │   └── directives/              # Shared Angular directives
     │
     └── features/
         └── trending-repos/          # The single feature of this app
@@ -195,13 +197,23 @@ URL. Switching modes in the UI does not write back to the URL.
 
 **Component hierarchy:**
 ```
-TrendingReposPageComponent          ← injects facade, owns layout
-  └── RepoListComponent             ← @Input: repos, isLoading, error
-        └── RepoCardComponent       ← @Input: repo, rating — emits nameClick
-  └── RepoPaginationComponent       ← @Input: page state — emits previousClick/nextClick
-  └── RepoDetailsDialogComponent    ← opened via CDK Dialog, injects facade for rating
-        └── StarRatingComponent     ← radio-group pattern, fully keyboard accessible
+AppComponent (app shell)
+  └── HeaderComponent               ← injects Dialog; opens AboutDialogComponent
+  └── RouterOutlet
+        └── TrendingReposPageComponent  ← injects facade, owns layout
+              └── RepoListComponent     ← @Input: repos, isLoading, error
+                    └── RepoCardComponent  ← @Input: repo, rating — emits nameClick
+              └── RepoPaginationComponent   ← @Input: page state — emits previousClick/nextClick
+              └── RepoDetailsDialogComponent  ← opened via CDK Dialog; injects data + DialogRef
+                    └── StarRatingComponent   ← radio-group pattern, fully keyboard accessible
+  └── FooterComponent
+
+AboutDialogComponent                ← opened via CDK Dialog from HeaderComponent; no injected data
 ```
+
+**Dialog overlay stacking:**
+
+Both dialogs use Angular CDK Dialog. The CDK renders each open dialog into its own overlay portal appended to the document body in the order dialogs are opened — the last-opened dialog sits on top of earlier ones with no manual z-index management required. Opening About while a repo-details dialog is already open correctly places About on top as the active focus-trapped surface. Closing About returns focus to the About button in the header; the underlying repo-details dialog remains intact.
 
 **Component rules:**
 - Page-level components may inject the facade

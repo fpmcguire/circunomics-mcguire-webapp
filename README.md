@@ -14,6 +14,7 @@ A polished Angular 21 web app listing the most-starred GitHub repositories creat
 - Switches mode via a toggle in the page header, or via `?mode=infinite` / `?mode=paginated` in the URL — useful for demos and review
 - Loads GitHub API data on demand in both modes — no unnecessary prefetching
 - Lets you rate any repository 1–5 stars via a modal; ratings persist across navigation and browser sessions
+- **About modal** in the page header — explains app purpose, browsing modes, ratings, data source, and GitHub API rate-limit behaviour in plain language
 
 > **Original challenge spec** requested infinite scroll. Paged view was introduced as a UX experiment (Step 5.5). Both modes are now available simultaneously — see `ROADMAP.md` for rationale.
 

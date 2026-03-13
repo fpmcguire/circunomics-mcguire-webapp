@@ -14,12 +14,34 @@
 // =============================================================================
 
 // Semi-transparent backdrop
-.repo-details-dialog-backdrop {
+body.repo-details-open .repo-details-dialog-backdrop {
   background: rgb(0 0 0 / 0.45);
+  inset: var(--header-height) 0 0 0;
+  z-index: 90;
+}
+
+body.repo-details-open .cdk-global-overlay-wrapper {
+  z-index: 90;
 }
 
 // Overlay pane: centers the dialog and constrains its size
 .repo-details-dialog-panel {
   width: min(600px, 95vw);
   max-height: 90vh;
+}
+
+// =============================================================================
+// About dialog overlay — same CDK pattern as repo-details-dialog.
+//
+// Overlay priority: CDK renders each dialog in DOM order — the last-opened
+// dialog sits naturally on top. No z-index override is needed.
+// =============================================================================
+
+.about-dialog-backdrop {
+  background: rgb(0 0 0 / 0.5);
+}
+
+.about-dialog-panel {
+  width: min(560px, 95vw);
+  max-height: 88vh;
 }

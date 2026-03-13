@@ -1,0 +1,209 @@
+// =============================================================================
+// AboutDialogComponent
+//
+// The host element (.about-dialog) is the CDK dialog content surface.
+// Sizing and centering are handled globally via .about-dialog-panel in
+// styles.scss, the same pattern used by RepoDetailsDialog.
+// =============================================================================
+
+:host {
+  display: flex;
+  flex-direction: column;
+  max-height: inherit; // respect .about-dialog-panel max-height
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+// ── Header ───────────────────────────────────────────────────────────────────
+
+.about-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-6) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.about-dialog__title {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-primary);
+  line-height: var(--leading-tight);
+  margin: 0;
+}
+
+.about-dialog__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 44px;  // 44px touch target
+  min-height: 44px;
+  margin: -4px -4px -4px 0;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  transition: background var(--transition-fast), color var(--transition-fast);
+  flex-shrink: 0;
+
+  &:hover {
+    background: var(--color-surface-raised);
+    color: var(--color-text-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+// ── Body ─────────────────────────────────────────────────────────────────────
+
+.about-dialog__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  scrollbar-gutter: stable;
+}
+
+// ── Section ──────────────────────────────────────────────────────────────────
+
+.about-dialog__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+
+  // Subtle top border separates sections visually
+  & + & {
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--color-border);
+  }
+
+  // De-emphasised final section
+  &--muted {
+    .about-dialog__section-title {
+      color: var(--color-text-secondary);
+    }
+
+    p {
+      color: var(--color-text-secondary);
+      font-size: var(--text-sm);
+    }
+  }
+}
+
+.about-dialog__section-title {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.about-dialog__section p {
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+// ── Definition list (browsing modes) ─────────────────────────────────────────
+
+.about-dialog__definition-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.about-dialog__definition-row {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: var(--space-2) var(--space-4);
+  align-items: baseline;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: var(--space-1);
+  }
+}
+
+.about-dialog__term {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.about-dialog__desc {
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.about-dialog__hint {
+  font-size: var(--text-xs) !important;
+  color: var(--color-text-muted) !important;
+
+  code {
+    font-family: var(--font-mono, monospace);
+    background: var(--color-surface-raised);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 1px 5px;
+    font-size: 0.9em;
+  }
+}
+
+// ── Link ─────────────────────────────────────────────────────────────────────
+
+.about-dialog__link {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+
+  &:hover {
+    color: var(--color-accent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+}
+
+// ── Footer ───────────────────────────────────────────────────────────────────
+
+.about-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.about-dialog__close-btn {
+  padding: var(--space-2) var(--space-5);
+  min-height: 44px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  background: var(--color-primary);
+  color: #fff;
+  transition: background var(--transition-fast);
+
+  &:hover {
+    background: var(--color-accent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}

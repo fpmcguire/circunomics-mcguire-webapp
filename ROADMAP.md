@@ -4,6 +4,66 @@
 
 ---
 
+## Step 9 — About modal / app context overlay ✅ DONE
+
+**Goal:** Add a polished, accessible About modal that explains what the app does, how both browsing modes work, how ratings work, what data comes from GitHub, and how the app handles API rate limits — written in calm, user-facing language, not developer jargon.
+
+### Why this was added
+
+A reviewer or first-time user encountering the app has no in-product explanation of its purpose, the browsing mode toggle, or the rating feature. The About modal closes that gap without cluttering the main interface — it lives behind a single, discoverable button in the header.
+
+The rate-limit section is specifically valuable for demo contexts: it sets expectations, explains the Retry path, and mentions that a personal access token can improve resilience in a secure setup.
+
+### Delivered
+
+**`AboutDialogComponent`** (`src/app/shared/ui/dialogs/about-dialog/`):
+- Placed in `shared/ui/dialogs/` — app-level concern triggered from the header, not feature-specific like `RepoDetailsDialog`
+- Same CDK Dialog system used throughout the app — no second modal mechanism introduced
+- Purely presentational — no injected data, no state; just content and a close action
+- Six content sections: What this app does · Browsing modes · Ratings · Data source · GitHub API limits · About this implementation
+- `data-testid` on all three required sections plus title, modal root, and both close controls
+
+**Header About button** (`app-header__about-btn`):
+- Inline info icon + "About" label — visually consistent with the existing nav link style
+- `data-testid="app-about-button"`, `aria-label="About this app"`, `min-height: 44px` touch target
+- `ChangeDetectionStrategy.OnPush` added to `HeaderComponent` at the same time
+
+**Overlay stacking:**
+- CDK Dialog renders each dialog into its own overlay portal in DOM order — the last-opened dialog naturally sits on top with no z-index hacks required
+- Opening About while a repo details dialog is open works correctly: About is the active focus-trapped surface; closing About returns focus to the About trigger, leaving the underlying dialog intact
+- Decision documented in both the component JSDoc and `styles.scss`
+
+**Global CDK overlay styles** (`styles.scss`):
+- `.about-dialog-backdrop` — `rgb(0 0 0 / 0.5)` — slightly deeper than repo-details to signal it is the top layer
+- `.about-dialog-panel` — `width: min(560px, 95vw); max-height: 88vh`
+
+**Responsive:**
+- Scrollable body (`overflow-y: auto; scrollbar-gutter: stable`) — long content never overflows the modal
+- Definition list for browsing modes stacks vertically below 480px
+- 44px minimum touch targets on all interactive elements
+
+**Accessibility:**
+- `role="dialog"`, `aria-modal="true"`, `aria-labelledby="about-dialog-title"` on the host element
+- `aria-labelledby` wired to `<h2 id="about-dialog-title">` — CDK receives `ariaLabelledBy` in `dialog.open()` config as well
+- CDK focus trap — Tab cycles within the modal only
+- Escape closes (CDK default)
+- Backdrop click closes (CDK default)
+- Focus returns to the About button when modal closes
+
+**New tests:**
+- `about-dialog.component.spec.ts` — 8 tests: title rendering, three required section testids, close button presence, X click closes, footer Close button closes, aria-labelledby wiring
+- `app.spec.ts` — 1 new test: About button present in header (2 → 3 tests)
+- `e2e/trending-repos.spec.ts` — new scenario 7: button visible, opens modal, key sections present, X closes, Escape closes, opens cleanly over repo-details dialog
+
+### Verification
+| Check | Result |
+|---|---|
+| `ng build` | ✅ Clean (1 pre-existing budget warning on dialog SCSS) |
+| `ng test` | ✅ 184/184 passing (14 files) |
+| `ng lint` | ✅ All files pass |
+
+---
+
 ## v2.0.0 — Post-Step-8 Hygiene Pass ✅ DONE
 
 **Goal:** Submission-clean repo — no committed generated artifacts, accurate docs, consistent wording.

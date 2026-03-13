@@ -141,6 +141,13 @@ data-testid="{feature}-{component}-{element}-{modifier?}"
 | Paginated mode button | `trending-repos-display-mode-paginated` |
 | Infinite mode button | `trending-repos-display-mode-infinite` |
 | Infinite scroll sentinel | `trending-repos-infinite-sentinel` |
+| About button (header) | `app-about-button` |
+| About modal | `app-about-modal` |
+| About modal title | `app-about-modal-title` |
+| About modal close button | `app-about-modal-close-button` |
+| About — browsing modes section | `app-about-modal-section-browsing-modes` |
+| About — ratings section | `app-about-modal-section-ratings` |
+| About — API limits section | `app-about-modal-section-api-limits` |
 
 **Rules:**
 - Always kebab-case
@@ -175,7 +182,8 @@ e2e/
     ├── Repo details modal and rating
     ├── Error state
     ├── Display mode switching
-    └── Ratings persist across mode switches
+    ├── Ratings persist across mode switches
+    └── About modal
 ```
 
 ---
@@ -227,7 +235,7 @@ npm run e2e:ui        # Playwright interactive UI
 
 | File | Tests | Type |
 |---|---|---|
-| `app.spec.ts` | 2 | Integration — shell landmarks |
+| `app.spec.ts` | 3 | Integration — shell landmarks + About button |
 | `github-query.utils.spec.ts` | 8 | Unit — UTC date/query builder |
 | `github-repo.mapper.spec.ts` | 5 | Unit — domain mapper |
 | `github-trending-repos.repository.spec.ts` | 12 | Integration — HTTP, errors, dedup |
@@ -240,14 +248,17 @@ npm run e2e:ui        # Playwright interactive UI
 | `repo-details-dialog.component.spec.ts` | 18 | Integration — dialog rendering + save/dismiss |
 | `display-mode-toggle.component.spec.ts` | 7 | Integration — segmented control rendering + output |
 | `intersection-observer.directive.spec.ts` | 5 | Unit — IntersectionObserver directive |
-| **Total** | **175** | |
+| `about-dialog.component.spec.ts` | 8 | Integration — content sections, close behaviour, a11y |
+| **Total** | **184** | |
 
-**E2E (Playwright):** 5 test groups in `e2e/trending-repos.spec.ts`:
+**E2E (Playwright):** 7 test groups in `e2e/trending-repos.spec.ts`:
 1. Initial page load
 2. Pagination navigation
 3. Repo details modal and rating
 4. Error state
 5. Display mode switching (toggle, query param, sentinel, ratings across modes)
+6. Ratings persist across mode switches
+7. About modal (open, content sections, close via X, close via Escape, stacking over repo details)
 
 All GitHub API calls mocked via `page.route()` — no live network required.
 

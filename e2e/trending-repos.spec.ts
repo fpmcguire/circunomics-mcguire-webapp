@@ -49,7 +49,7 @@ test.describe('Initial page load', () => {
 
   test('shows the repository count in the page header', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByText('15 repositories found')).toBeVisible();
+    await expect(page.getByText('15 repositories found on GitHub')).toBeVisible();
   });
 
   test('shows pagination controls once data loads', async ({ page }) => {
@@ -544,5 +544,69 @@ test.describe('Ratings persist across mode switches', () => {
     // Rating should still be visible on the same card
     const firstCardInfinite = page.getByTestId('trending-repos-list-item').first();
     await expect(firstCardInfinite.getByTestId('trending-repos-list-item-rating')).toBeVisible();
+  });
+});
+
+// ── 7. About modal ────────────────────────────────────────────────────────────
+
+test.describe('About modal', () => {
+  test.beforeEach(async ({ page }) => {
+    await mockGithubApi(page, EIGHT_REPOS, 8);
+  });
+
+  test('About button is visible in the header', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByTestId('app-about-button')).toBeVisible();
+  });
+
+  test('clicking About opens the modal with expected title', async ({ page }) => {
+    await page.goto('/');
+    await page.getByTestId('app-about-button').click();
+    await expect(page.getByTestId('app-about-modal')).toBeVisible();
+    await expect(page.getByTestId('app-about-modal-title')).toHaveText('About this app');
+  });
+
+  test('About modal contains key content sections', async ({ page }) => {
+    await page.goto('/');
+    await page.getByTestId('app-about-button').click();
+    await expect(page.getByTestId('app-about-modal-section-browsing-modes')).toBeVisible();
+    await expect(page.getByTestId('app-about-modal-section-ratings')).toBeVisible();
+    await expect(page.getByTestId('app-about-modal-section-api-limits')).toBeVisible();
+  });
+
+  test('About modal closes via the X button', async ({ page }) => {
+    await page.goto('/');
+    await page.getByTestId('app-about-button').click();
+    await expect(page.getByTestId('app-about-modal')).toBeVisible();
+
+    await page.getByTestId('app-about-modal-close-button').click();
+    await expect(page.getByTestId('app-about-modal')).not.toBeVisible();
+  });
+
+  test('About modal closes via Escape key', async ({ page }) => {
+    await page.goto('/');
+    await page.getByTestId('app-about-button').click();
+    await expect(page.getByTestId('app-about-modal')).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('app-about-modal')).not.toBeVisible();
+  });
+
+  test('About modal opens cleanly while repo details dialog is open', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByTestId('trending-repos-list')).toBeVisible();
+
+    // Open the repo details dialog first
+    await page.getByTestId('trending-repos-list-item-name-button').first().click();
+    await expect(page.getByTestId('repo-details-modal')).toBeVisible();
+
+    // Open About on top
+    await page.getByTestId('app-about-button').click();
+    await expect(page.getByTestId('app-about-modal')).toBeVisible();
+
+    // Both are technically in DOM; About is the active/top dialog
+    // Close About — repo details should still be behind it
+    await page.getByTestId('app-about-modal-close-button').click();
+    await expect(page.getByTestId('app-about-modal')).not.toBeVisible();
   });
 });

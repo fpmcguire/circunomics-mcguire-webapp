@@ -22,4 +22,12 @@ describe('App shell', () => {
 
     expect(screen.getByRole('main')).toBeInTheDocument();
   });
+
+  it('renders the About button in the header', async () => {
+    await render(App, {
+      providers: [provideRouter(routes), provideHttpClient(), provideAnimationsAsync()],
+    });
+
+    expect(screen.getByTestId('app-about-button')).toBeInTheDocument();
+  });
 });
