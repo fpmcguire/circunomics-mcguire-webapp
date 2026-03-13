@@ -191,7 +191,12 @@ describe('TrendingReposFacade', () => {
     });
 
     it('does not trigger an API fetch when next-page data is already loaded', () => {
-      const stub = repoStub([makePage(Array.from({ length: 15 }, (_, i) => makeRepo(i + 1)), true)]);
+      const stub = repoStub([
+        makePage(
+          Array.from({ length: 15 }, (_, i) => makeRepo(i + 1)),
+          true,
+        ),
+      ]);
       TestBed.configureTestingModule({
         providers: [
           TrendingReposFacade,
@@ -315,7 +320,8 @@ describe('TrendingReposFacade', () => {
       facade.loadInitial();
       facade.goToNextPage(); // triggers fetch; fetch fails
       expect(facade.visiblePage()).toBe(1); // page must not advance
-      expect(facade.error()?.kind).toBe('network');
+      expect(facade.error()).toBeNull();
+      expect(facade.hasMore()).toBe(false);
     });
   });
 
@@ -340,10 +346,7 @@ describe('TrendingReposFacade', () => {
     it('deduplicates repos that appear in both API pages', () => {
       const shared = makeRepo(1);
       const repos = Array.from({ length: 10 }, (_, i) => makeRepo(i + 1));
-      const { facade } = setup([
-        makePage(repos),
-        makePage([shared, makeRepo(11)], true),
-      ]);
+      const { facade } = setup([makePage(repos), makePage([shared, makeRepo(11)], true)]);
       facade.loadInitial();
       facade.goToNextPage(); // fetch page 2 (needs item 11)
       // shared (id=1) was already in page 1; should not be duplicated
@@ -409,7 +412,8 @@ describe('TrendingReposFacade', () => {
       facade.goToNextPage(); // triggers page 2 fetch which fails
       expect(facade.repos()).toHaveLength(10);
       expect(facade.isLoadingMore()).toBe(false);
-      expect(facade.error()?.kind).toBe('network');
+      expect(facade.error()).toBeNull();
+      expect(facade.hasMore()).toBe(false);
     });
   });
 
@@ -466,7 +470,8 @@ describe('TrendingReposFacade', () => {
       const facade = TestBed.inject(TrendingReposFacade);
       facade.loadInitial(); // call 0 — API page 1 succeeds
       facade.goToNextPage(); // call 1 — API page 2 fails (no cached data for UI page 2)
-      expect(facade.error()).not.toBeNull();
+      expect(facade.error()).toBeNull();
+      expect(facade.hasMore()).toBe(false);
       expect(facade.currentPage()).toBe(1); // last successful API page is still 1
 
       failOnThirdCall = true;
@@ -674,7 +679,10 @@ describe('display mode', () => {
     it('infinite mode still shows all repos after loadMore', () => {
       const { facade } = setup([
         makePage(Array.from({ length: 10 }, (_, i) => makeRepo(i + 1))),
-        makePage(Array.from({ length: 5 }, (_, i) => makeRepo(i + 11)), true),
+        makePage(
+          Array.from({ length: 5 }, (_, i) => makeRepo(i + 11)),
+          true,
+        ),
       ]);
       facade.loadInitial();
       facade.setDisplayMode('infinite');

@@ -95,6 +95,62 @@ test.describe('Pagination navigation', () => {
     await expect(rangeIndicator).toContainText('Showing 11–15 of 15');
   });
 
+  test('later-page 403 in Paginated mode keeps list and toggle usable', async ({ page }) => {
+    // Override describe-level mock so this test can emulate a later API-page failure.
+    await page.unroute('**/api.github.com/search/repositories**');
+
+    await page.route('**/api.github.com/search/repositories**', (route) => {
+      const requestUrl = new URL(route.request().url());
+      const pageParam = Number(requestUrl.searchParams.get('page') ?? '1');
+
+      if (pageParam === 2) {
+        route.fulfill({
+          status: 403,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'API rate limit exceeded' }),
+        });
+        return;
+      }
+
+      const pageStart = (pageParam - 1) * 100 + 1;
+      const items = Array.from({ length: 100 }, (_, i) => makeRepo(pageStart + i));
+
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          total_count: 500,
+          incomplete_results: false,
+          items,
+        }),
+      });
+    });
+
+    await page.goto('/');
+    await expect(page.getByTestId('trending-repos-list')).toBeVisible();
+    await expect(page.getByTestId('trending-repos-display-mode-toggle')).toBeVisible();
+
+    // Walk through cached UI pages from API page 1 (100 repos => 10 UI pages).
+    const nextButton = page.getByTestId('trending-repos-pagination-next-button').first();
+    const pageIndicator = page.getByTestId('trending-repos-pagination-page-indicator').first();
+    for (let i = 0; i < 9; i++) {
+      await nextButton.click();
+    }
+    await expect(pageIndicator).toHaveText('Page 10');
+
+    // This click requires API page 2 and will return 403.
+    await nextButton.click();
+
+    // App should keep already loaded data interactive, without collapsing to
+    // global error UI.
+    await expect(pageIndicator).toHaveText('Page 10');
+    await expect(page.getByTestId('trending-repos-list')).toBeVisible();
+    await expect(page.getByText('repo-91').first()).toBeVisible();
+    await expect(page.getByTestId('trending-repos-display-mode-toggle')).toBeVisible();
+    await expect(page.getByTestId('trending-repos-error')).toHaveCount(0);
+    await expect(nextButton).toBeDisabled();
+  });
+
   test('Previous button navigates back to page 1', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByTestId('trending-repos-list')).toBeVisible();
@@ -372,6 +428,60 @@ test.describe('Display mode switching', () => {
         timeout: 10_000,
       })
       .toBeGreaterThan(1);
+  });
+
+  test('later-page 403 in Infinite mode keeps list and mode toggle usable', async ({ page }) => {
+    // Override describe-level mock so this test can emulate page-11 failure.
+    await page.unroute('**/api.github.com/search/repositories**');
+
+    let sawPage11 = false;
+
+    await page.route('**/api.github.com/search/repositories**', (route) => {
+      const requestUrl = new URL(route.request().url());
+      const pageParam = Number(requestUrl.searchParams.get('page') ?? '1');
+
+      if (pageParam === 11) {
+        sawPage11 = true;
+        route.fulfill({
+          status: 403,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'API rate limit exceeded' }),
+        });
+        return;
+      }
+
+      const pageStart = (pageParam - 1) * 100 + 1;
+      const items = Array.from({ length: 100 }, (_, i) => makeRepo(pageStart + i));
+
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          total_count: 5000,
+          incomplete_results: false,
+          items,
+        }),
+      });
+    });
+
+    await page.goto('/');
+    await expect(page.getByTestId('trending-repos-list')).toBeVisible();
+
+    await page.getByTestId('trending-repos-display-mode-infinite').click();
+
+    // Wait for the failing later page to be attempted.
+    await expect
+      .poll(() => sawPage11, {
+        timeout: 15_000,
+      })
+      .toBe(true);
+
+    // App should keep already loaded data interactive instead of showing
+    // the full-page error screen.
+    await expect(page.getByTestId('trending-repos-list')).toBeVisible();
+    await expect(page.getByTestId('trending-repos-list-item').first()).toBeVisible();
+    await expect(page.getByTestId('trending-repos-display-mode-toggle')).toBeVisible();
+    await expect(page.getByTestId('trending-repos-error')).toHaveCount(0);
   });
 
   test('switching back to Paginated mode restores pagination controls', async ({ page }) => {

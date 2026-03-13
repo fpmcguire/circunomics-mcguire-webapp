@@ -319,6 +319,21 @@ export class TrendingReposFacade {
         error: (err: AppError) => {
           this.isFetching = false;
           this._pendingUiPage = null;
+
+          const hasLoadedRepos = this._state().repos.length > 0;
+          if (hasLoadedRepos) {
+            // A later-page failure should not collapse the already loaded list
+            // into a global error screen. Keep current data interactive and
+            // stop requesting additional pages.
+            this._patch({
+              isLoading: false,
+              isLoadingMore: false,
+              hasMore: false,
+              error: null,
+            });
+            return;
+          }
+
           this._patch({
             isLoading: false,
             isLoadingMore: false,

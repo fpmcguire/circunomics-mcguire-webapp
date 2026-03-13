@@ -80,6 +80,25 @@ It is never stored, logged, or persisted beyond the HTTP request.
 
 **Never commit a token to source control.**
 
+### Graceful error handling (for review)
+
+The app handles GitHub API failures differently depending on *when* they happen:
+
+- **Initial load fails** (for example, first request gets 403/429):
+  - The app shows the dedicated error state with a Retry button.
+  - This prevents rendering an empty/broken list before any data exists.
+
+- **Later-page fetch fails** after repos are already loaded (applies to both modes):
+  - Already loaded repos remain visible and interactive.
+  - The display-mode toggle remains usable.
+  - The app does **not** switch to the global full-page error UI.
+  - Further API paging is stopped for that session (`hasMore = false`) to avoid repeated failing requests.
+
+This behavior is implemented in the trending repos facade and validated with tests for both:
+
+- **Paginated mode**: later-page 403 keeps current page/list usable.
+- **Infinite mode**: later-page 403 keeps accumulated list and toggle usable.
+
 ---
 
 ## Tooling
