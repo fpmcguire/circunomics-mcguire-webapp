@@ -9,6 +9,8 @@
 :host {
   display: flex;
   flex-direction: column;
+  height: 100%;
+  min-height: 0;
   max-height: inherit; // respect .about-dialog-panel max-height
   background: var(--color-surface);
   border-radius: var(--radius-xl);
@@ -41,12 +43,14 @@
   justify-content: center;
   width: 36px;
   height: 36px;
-  min-width: 44px;  // 44px touch target
+  min-width: 44px; // 44px touch target
   min-height: 44px;
   margin: -4px -4px -4px 0;
   border-radius: var(--radius-md);
   color: var(--color-text-secondary);
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
   flex-shrink: 0;
 
   &:hover {
@@ -64,6 +68,7 @@
 
 .about-dialog__body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: var(--space-6);
   display: flex;

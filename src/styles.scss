@@ -41,7 +41,15 @@ body.repo-details-open .cdk-global-overlay-wrapper {
   background: rgb(0 0 0 / 0.5);
 }
 
+body.about-open .cdk-global-overlay-wrapper {
+  align-items: center;
+  padding-block: var(--space-3);
+}
+
 .about-dialog-panel {
-  width: min(560px, 95vw);
-  max-height: 88vh;
+  width: min(560px, calc(100vw - var(--space-6)));
+  max-height: calc(100dvh - var(--space-6));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
