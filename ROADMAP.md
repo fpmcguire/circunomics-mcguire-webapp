@@ -433,6 +433,77 @@ repo-rating-star-1 … repo-rating-star-5
 
 ---
 
+## Step 8 — Dual Browsing Modes ✅ DONE
+
+**Goal:** Restore infinite scroll alongside the existing paginated view, positioning both as experiment-ready browsing experiences selectable at runtime — without duplicating the data layer.
+
+### Why this was added
+
+The original challenge brief asked for infinite scroll. Step 5.5 replaced it with explicit pagination as a deliberate UX experiment. Step 8 makes the choice visible to reviewers by supporting both modes simultaneously and allowing instant switching — demonstrating that the architecture can accommodate alternate browsing experiences without restructuring the app.
+
+Framed as experiment-ready UX exploration: one codebase, one shared data layer, two interchangeable presentation treatments. This mirrors the kind of feature-flag / A/B experimentation pattern common in SaaS products, without requiring an external experimentation SDK.
+
+### Delivered
+
+**`RepoListDisplayMode = 'paginated' | 'infinite'`** — defined in `domain/models/repo-list-display-mode.model.ts` alongside `DEFAULT_DISPLAY_MODE`. Placed in the domain layer because the distinction between browsing modes is a product concept, not a UI implementation detail.
+
+**Facade additions:**
+- `_displayMode` private signal, initialised from `DEFAULT_DISPLAY_MODE`
+- `displayMode` — public read-only signal
+- `showPaginationControls` — `computed(() => displayMode() === 'paginated')`
+- `showInfiniteSentinel` — `computed(() => infinite && hasMore && !loading)`
+- `visibleRepos` — returns the full accumulated list in infinite mode; the 10-item slice in paginated mode. Single signal, two behaviours, zero branching in templates
+- `setDisplayMode(mode)` — switches mode; resets `_uiPage` to 1 when switching to paginated
+- `loadMore()` — delegates to `_triggerNextApiPage()`; guarded by existing `isFetching` / `hasMore` / `isLoading` checks; used by the infinite scroll sentinel
+
+**Query param initialisation:**
+- `?mode=infinite` or `?mode=paginated` in the URL initialises the mode on page load via `ActivatedRoute.snapshot.queryParamMap`
+- Any unrecognised value silently falls back to `DEFAULT_DISPLAY_MODE` (`'paginated'`)
+- The facade signal is the runtime source of truth; the URL param is read once at `ngOnInit` — no reactive subscription to `queryParams` needed
+
+**`DisplayModeToggleComponent`** (`ui/components/display-mode-toggle/`):
+- Segmented control rendered as a `radiogroup` with two `role="radio"` buttons
+- `aria-checked` conveys active/inactive state to screen readers
+- Fully keyboard operable; no focus jump on mode switch
+- Emits `modeChange: OutputEmitterRef<RepoListDisplayMode>` — holds no state
+
+**`IntersectionObserverDirective`** (`shared/directives/`):
+- Accepts `intersectionRoot = input<HTMLElement | null>(null)` — on non-mobile, the list scrolls inside a fixed-height container, so the sentinel must be observed relative to *that element*, not the browser viewport
+- `rootMargin` and `threshold` are also configurable inputs; defaults match standard usage
+- Sentinel div is `aria-hidden="true"` and 1px tall — no visual or screen-reader footprint
+- `OnDestroy` disconnects the observer
+
+**Layout — fixed-height scrollable list container (non-mobile):**
+- `body`: `height: 100dvh; display: flex; flex-direction: column` — locks the viewport
+- `app-root`, `main.app-main`, `.app-main__container`: each `flex: 1; min-height: 0` — propagate height down the tree
+- `:host` and `.repos-page`: same chain
+- `.repos-page__list-container`: `flex: 1; min-height: 0; overflow-y: auto; scrollbar-gutter: stable` — fills the exact remaining height between the top pagination bar and the footer; footer is always visible
+- Bottom pagination bar (`.repos-page__pagination--bottom`): `display: none` at ≥ 641px; visible on mobile where natural document scroll is used instead
+- On mobile (≤ 640px): entire chain is released; page grows with content; no fixed heights
+
+**Page template — conditional rendering by mode:**
+- `@if (facade.showPaginationControls())` guards all pagination controls
+- `@if (facade.showInfiniteSentinel())` guards the sentinel div and wires `(intersected)="onSentinelIntersected()"`
+- `[intersectionRoot]="listContainerRef.nativeElement"` on the sentinel — scopes observation to the scroll container
+- `@if (facade.isLoadingMore() && !facade.showPaginationControls())` — loading spinner in infinite mode only
+- `facade.visibleRepos()` used in both modes — the facade decides what to return
+
+**New and updated tests:**
+- `trending-repos.facade.spec.ts` — 20 new tests covering `loadMore()`, `setDisplayMode()`, `visibleRepos` in both modes, `showPaginationControls`, `showInfiniteSentinel` (38 → 58 total)
+- `display-mode-toggle.component.spec.ts` — 7 tests: rendering, `aria-checked` state, `modeChange` emission, no-emit on re-click
+- `intersection-observer.directive.spec.ts` — 5 tests: observer setup, intersection/non-intersection events, custom root element, disconnect on destroy
+- `e2e/trending-repos.spec.ts` — new scenario 5: toggle visibility, default mode, switching hides/shows controls, sentinel shown, query param initialisation, ratings persist across switch
+
+### Verification
+| Check | Result |
+|---|---|
+| `ng build` | ✅ Clean (1 budget warning on dialog SCSS — pre-existing) |
+| `ng test` | ✅ 175/175 passing (13 files) |
+| `ng lint` | ✅ All files pass |
+| E2E | ✅ 5 scenarios written across 2 test groups in `trending-repos.spec.ts` |
+
+---
+
 ## Tech Lead notes (incorporated)
 
 | Feedback | Applied |

@@ -63,9 +63,18 @@ src/
             │
             └── ui/                  # Presentation layer — Angular components only
                 ├── pages/
-                │   └── trending-repos-page/       # Routable page — injects facade
-                ├── components/                    # RepoList, RepoCard, RepoPagination, StarRating
+                │   └── trending-repos-page/       # Routable page — injects facade, owns mode toggle
+                ├── components/                    # RepoList, RepoCard, RepoPagination, StarRating,
+                │                                  # DisplayModeToggle
                 └── dialogs/                       # RepoDetailsDialog via CDK Dialog
+```
+
+Shared directives live in `src/app/shared/directives/`:
+
+```
+shared/
+  directives/
+    intersection-observer.directive.ts   # IntersectionObserver with configurable root element
 ```
 
 ---
@@ -114,7 +123,7 @@ Responsible for talking to the outside world. Implements the domain contract.
 The single orchestration point between infrastructure and UI. Components never call the
 repository directly.
 
-**Exposes two layers of signals:**
+**Exposes three layers of signals:**
 
 *API pagination state (GitHub fetch tracking):*
 ```typescript
@@ -129,10 +138,17 @@ ratings:        Signal<Record<number, number>>  // repoId → 1–5 stars
 isEmpty:        Signal<boolean>
 ```
 
-*UI pagination state (visible slice):*
+*Display mode state:*
 ```typescript
-visiblePage:       Signal<number>           // current UI page (1-indexed)
-visibleRepos:      Signal<GithubRepo[]>     // computed slice of 10 repos
+displayMode:              Signal<RepoListDisplayMode>  // 'paginated' | 'infinite'
+showPaginationControls:   Signal<boolean>              // true in paginated mode
+showInfiniteSentinel:     Signal<boolean>              // true in infinite mode with hasMore
+```
+
+*UI presentation state (paginated mode slice; visibleRepos covers both modes):*
+```typescript
+visibleRepos:      Signal<GithubRepo[]>     // full list in infinite mode; PAGE_SIZE slice in paginated
+visiblePage:       Signal<number>           // current UI page (1-indexed; paginated mode)
 visibleRangeStart: Signal<number>           // 1-indexed first item shown
 visibleRangeEnd:   Signal<number>           // 1-indexed last item shown
 totalLoaded:       Signal<number>           // repos in memory cache
@@ -140,16 +156,30 @@ canGoNext:         Signal<boolean>
 canGoPrevious:     Signal<boolean>
 ```
 
-**API page vs UI page — the key distinction:**
+*Public actions:*
+```typescript
+loadInitial()          // fetches page 1; no-ops if already loading or data exists
+goToNextPage()         // advances UI page; fetches next API page if needed (paginated)
+goToPreviousPage()     // decrements UI page; never fetches (paginated)
+loadMore()             // fetches next API page and appends; does not advance UI page (infinite)
+setDisplayMode(mode)   // switches between 'paginated' and 'infinite'; resets UI page on paginated
+retry()                // replays the exact failed API page
+setRating(id, stars)
+getRating(id): number
+```
+
+**Three-way terminology distinction:**
 
 | Term | Meaning |
 |---|---|
 | **API page** | A batch of up to 100 repos fetched from GitHub (`page=N` query param) |
-| **UI page** | A visible slice of 10 repos rendered to the user |
+| **UI page** | A visible slice of 10 repos rendered in paginated mode (1-indexed) |
+| **Browsing mode** | How the user navigates the loaded list — `paginated` or `infinite` |
 
-One API page fills 10 UI pages. `goToNextPage()` advances instantly if the required repos are
-already cached; otherwise records `_pendingUiPage` and triggers an API fetch — the UI page
-advances only after data arrives, preventing premature empty renders.
+Browsing mode is presentation-only and lives in the page component, not the facade. It does not
+affect how or when data is fetched — both modes use the same repo cache and the same API paging
+logic. The only difference is whether `visibleRepos` (a 10-item slice) or `repos` (the full
+accumulated list) is passed to the list component.
 
 **Why a facade over multiple services:**
 - One place to look for all feature state
@@ -160,8 +190,6 @@ advances only after data arrives, preventing premature empty renders.
 ---
 
 ### UI / Presentation layer
-
-*(Implemented in Steps 5–5.5–6)*
 
 **Component hierarchy:**
 ```
@@ -209,10 +237,11 @@ RepoListComponent → RepoCardComponent
 | Concern | Signals approach |
 |---|---|
 | Server data | `signal<GithubRepo[]>` — set by facade after each page fetch |
-| Pagination | `signal<number>` currentPage, incremented by facade action |
+| API pagination | `signal<number>` currentPage, incremented by facade action |
 | Initial load | `signal<boolean>` isLoading |
-| Subsequent pages | `signal<boolean>` isLoadingMore (API page 2+ in-flight; shown in pagination control) |
+| Subsequent pages | `signal<boolean>` isLoadingMore (API page 2+ in-flight) |
 | UI pagination | `signal<number>` visiblePage + computed `visibleRepos`, `canGoNext`, `canGoPrevious` |
+| Browsing mode | `Signal<BrowsingMode>` derived from `ActivatedRoute.queryParams` via `toSignal()` — URL is source of truth; switching never re-fetches |
 | Error state | `signal<AppError \| null>` — typed, resettable |
 | Ratings | `signal<Record<number, number>>` + localStorage sync |
 | Derived state | `computed()` — `isEmpty`, `visibleRangeStart`, `visibleRangeEnd`, etc. |
@@ -259,8 +288,9 @@ Accessibility is a structural concern, built in from the start — not a retrofi
 |---|---|
 | Modal | CDK Dialog — focus trap, Escape key, `aria-modal="true"`, `aria-labelledby` |
 | Star rating | Radio group — fully keyboard navigable, screen-reader labelled |
-| Infinite scroll sentinel | Removed — replaced by explicit Previous/Next pagination controls |
-| Pagination controls | `<nav aria-label="Repository list pagination">` with real `<button>` elements; Previous/Next have descriptive `aria-label`; disabled state conveyed via `disabled` attribute |
+| Infinite scroll sentinel | `IntersectionObserverDirective` — `IntersectionObserver` on a 1px `aria-hidden` div at the bottom of the list; `intersectionRoot` is set to the scrollable list container so the sentinel fires relative to that element, not the window viewport; rendered only in infinite mode while `hasMore` is true |
+| Pagination controls | `<nav aria-label="Repository list pagination">` with real `<button>` elements; Previous/Next have descriptive `aria-label`; disabled state conveyed via `disabled` attribute; rendered only in paginated mode |
+| Browsing mode toggle | `radiogroup` with two `role="radio"` buttons; `aria-checked` conveys the active/inactive state; keyboard-operable; no focus jump on mode switch |
 | Loading/error announcements | `aria-live="polite"` region in the repo list |
 | Skip link | First focusable element in `index.html` — targets `#main-content` |
 | Focus ring | `:focus-visible` in global reset — always shown for keyboard users |

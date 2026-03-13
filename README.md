@@ -8,11 +8,14 @@ A polished Angular 21 web app listing the most-starred GitHub repositories creat
 ### What it does
 
 - Fetches the most-starred GitHub repositories created in the last 30 days
-- Displays them 10 per page with **Previous / Next pagination controls**
-- Loads additional GitHub API data on demand as you page forward — no unnecessary prefetching
-- Lets you rate any repository 1–5 stars via a modal; ratings persist across page navigation and browser sessions
+- Supports **two browsing modes**, switchable at any time:
+  - **Paged view** (default) — explicit Previous / Next controls, 10 repos per page
+  - **Infinite scroll** — auto-loads as you scroll, accumulates the full list
+- Switches mode via a toggle in the page header, or via `?mode=infinite` / `?mode=paginated` in the URL — useful for demos and review
+- Loads GitHub API data on demand in both modes — no unnecessary prefetching
+- Lets you rate any repository 1–5 stars via a modal; ratings persist across navigation and browser sessions
 
-> The original challenge spec requested infinite scroll. This implementation uses explicit page-based navigation instead — a deliberate UX enhancement introduced at stakeholder request. See `ROADMAP.md` Step 5.5 for rationale.
+> **Original challenge spec** requested infinite scroll. Paged view was introduced as a UX experiment (Step 5.5). Both modes are now available simultaneously — see `ROADMAP.md` for rationale.
 
 ---
 
@@ -96,3 +99,9 @@ It is never stored, logged, or persisted beyond the HTTP request.
 ## Project structure
 
 See [PROJECT.md](./PROJECT.md) and [ARCHITECTURE.md](./docs/ARCHITECTURE.md) for full details.
+
+---
+
+## Future enhancements
+
+See [FUTURE-FEATURES.md](./FUTURE-FEATURES.md) for proposed enhancements (dynamic age-range selector, star-history chart) with feasibility notes and API tradeoffs. These are not committed roadmap scope.

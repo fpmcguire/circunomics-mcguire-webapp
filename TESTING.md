@@ -94,6 +94,7 @@ it('renders the retry button when error is set', async () => {
 2. Pagination navigation (Next/Previous, range indicator, page indicator)
 3. Clicking a repo name → modal opens → rating → save → star visible in list; dismiss paths do not commit rating
 4. GitHub API error state is shown; retry re-fetches successfully
+5. Display mode switching — toggle activates infinite/paginated mode; `?mode=` query param initialises mode; sentinel shown in infinite mode; ratings persist across mode switches
 
 All tests use `page.route()` to intercept GitHub API calls — deterministic, no live network required.
 
@@ -130,10 +131,16 @@ data-testid="{feature}-{component}-{element}-{modifier?}"
 | Next page button | `trending-repos-pagination-next-button` |
 | Page indicator | `trending-repos-pagination-page-indicator` |
 | Range indicator | `trending-repos-pagination-range-indicator` |
-| Detail modal | `repo-details-modal` |
+| Browsing mode toggle | `browsing-mode-toggle` |
+| Infinite scroll sentinel | `trending-repos-infinite-sentinel` |
+| End-of-list indicator | `infinite-scroll-end` |
 | Modal close | `repo-details-modal-close-button` |
 | Modal repo name | `repo-details-modal-name` |
 | Star rating inputs | `repo-rating-star-1` … `repo-rating-star-5` |
+| Display mode toggle | `trending-repos-display-mode-toggle` |
+| Paginated mode button | `trending-repos-display-mode-paginated` |
+| Infinite mode button | `trending-repos-display-mode-infinite` |
+| Infinite scroll sentinel | `trending-repos-infinite-sentinel` |
 
 **Rules:**
 - Always kebab-case
@@ -163,6 +170,11 @@ E2E tests live in `e2e/`:
 e2e/
   helpers.ts                     ← mock data factory + page.route() interceptors
   trending-repos.spec.ts         ← critical user journey tests
+    ├── Initial page load
+    ├── Pagination navigation
+    ├── Repo details modal and rating
+    ├── Error state
+    └── Browsing mode toggle
 ```
 
 ---
@@ -219,15 +231,23 @@ npm run e2e:ui        # Playwright interactive UI
 | `github-repo.mapper.spec.ts` | 5 | Unit — domain mapper |
 | `github-trending-repos.repository.spec.ts` | 12 | Integration — HTTP, errors, dedup |
 | `rating-persistence.service.spec.ts` | 8 | Unit — localStorage validation |
-| `trending-repos.facade.spec.ts` | 38 | Integration — all facade flows |
+| `trending-repos.facade.spec.ts` | 58 | Integration — all facade flows, both display modes |
 | `repo-card.component.spec.ts` | 12 | Integration — card rendering + interactions |
 | `repo-list.component.spec.ts` | 15 | Integration — list states + events |
 | `repo-pagination.component.spec.ts` | 15 | Integration — pagination controls |
 | `star-rating.component.spec.ts` | 10 | Integration — rating widget |
 | `repo-details-dialog.component.spec.ts` | 18 | Integration — dialog rendering + save/dismiss |
-| **Total** | **143** | |
+| `display-mode-toggle.component.spec.ts` | 7 | Integration — segmented control rendering + output |
+| `intersection-observer.directive.spec.ts` | 5 | Unit — IntersectionObserver directive |
+| **Total** | **175** | |
 
-**E2E (Playwright):** 17 tests across 4 scenarios in `e2e/trending-repos.spec.ts`.
+**E2E (Playwright):** 5 test groups in `e2e/trending-repos.spec.ts`:
+1. Initial page load
+2. Pagination navigation
+3. Repo details modal and rating
+4. Error state
+5. Display mode switching (toggle, query param, sentinel, ratings across modes)
+
 All GitHub API calls mocked via `page.route()` — no live network required.
 
 ---

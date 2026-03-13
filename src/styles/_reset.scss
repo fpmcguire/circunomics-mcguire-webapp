@@ -28,7 +28,14 @@ body {
   line-height: var(--leading-normal);
   color: var(--color-text-primary);
   background-color: var(--color-bg);
-  min-height: 100dvh;
+  // Non-mobile: lock body to the viewport height so the flex chain gives the
+  // list container a precise remaining height — footer always visible.
+  // Mobile: normal document height; page scrolls naturally.
+  @media (min-width: 641px) {
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 img,

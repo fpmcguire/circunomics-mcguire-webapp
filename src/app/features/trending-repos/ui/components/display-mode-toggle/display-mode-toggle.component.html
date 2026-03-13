@@ -1,0 +1,34 @@
+<div
+  class="display-mode-toggle"
+  role="radiogroup"
+  aria-label="List view mode"
+  data-testid="trending-repos-display-mode-toggle"
+>
+  <span class="display-mode-toggle__label" aria-hidden="true">View</span>
+
+  <div class="display-mode-toggle__track">
+    <button
+      class="display-mode-toggle__btn"
+      role="radio"
+      type="button"
+      [attr.aria-checked]="mode() === 'paginated'"
+      [class.display-mode-toggle__btn--active]="mode() === 'paginated'"
+      data-testid="trending-repos-display-mode-paginated"
+      (click)="select('paginated')"
+    >
+      Paginated
+    </button>
+
+    <button
+      class="display-mode-toggle__btn"
+      role="radio"
+      type="button"
+      [attr.aria-checked]="mode() === 'infinite'"
+      [class.display-mode-toggle__btn--active]="mode() === 'infinite'"
+      data-testid="trending-repos-display-mode-infinite"
+      (click)="select('infinite')"
+    >
+      Infinite
+    </button>
+  </div>
+</div>

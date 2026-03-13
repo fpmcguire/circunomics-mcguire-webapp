@@ -1,0 +1,91 @@
+// =============================================================================
+// DisplayModeToggleComponent — segmented control for infinite / paginated modes
+// =============================================================================
+
+.display-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+
+  // --- Label ---
+
+  &__label {
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    user-select: none;
+  }
+
+  // --- Button group container ---
+  // Wrap the two buttons in a single pill-shaped track
+
+  &__btn {
+    // Reset
+    background: none;
+    border: none;
+    font: inherit;
+    cursor: pointer;
+
+    // Layout
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    padding: 0 var(--space-3);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-md);
+    transition:
+      background var(--transition-fast),
+      color var(--transition-fast),
+      box-shadow var(--transition-fast);
+    white-space: nowrap;
+    // Touch target minimum
+    min-width: 44px;
+    min-height: 32px;
+
+    &:hover:not(.display-mode-toggle__btn--active) {
+      background: var(--color-border);
+      color: var(--color-text-primary);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    // Active / selected state
+    &--active {
+      background: var(--color-primary);
+      color: #fff;
+      cursor: default;
+      box-shadow: var(--shadow-sm);
+
+      &:hover {
+        background: var(--color-primary); // no hover change when already selected
+      }
+    }
+  }
+}
+
+// Group the two buttons in a bordered pill track
+.display-mode-toggle__btn + .display-mode-toggle__btn {
+  // Visually attach to its sibling
+}
+
+// Pill track around the buttons
+.display-mode-toggle {
+  // Wrap buttons in a bordered container
+  &__track {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-full);
+    padding: 2px;
+    gap: 2px;
+    background: var(--color-bg);
+  }
+}

@@ -3,6 +3,7 @@
 > This document is updated incrementally as each implementation milestone is completed.
 > Full architectural rationale lives in [ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 > Step-by-step delivery plan lives in [ROADMAP.md](./ROADMAP.md).
+> Proposed future enhancements live in [FUTURE-FEATURES.md](./FUTURE-FEATURES.md) — not committed roadmap scope.
 
 ---
 
@@ -75,10 +76,15 @@ src/
                 │   ├── repo-card/                   # Presentational repo card
                 │   ├── repo-list/                   # List + all UI states (skeleton, error, empty)
                 │   ├── repo-pagination/              # Previous/Next pagination controls
-                │   └── star-rating/                 # Interactive 5-star rating (radio-group pattern)
+                │   ├── star-rating/                 # Interactive 5-star rating (radio-group pattern)
+                │   └── display-mode-toggle/         # Segmented control — paginated / infinite
                 └── dialogs/
                     └── repo-details-dialog/         # CDK Dialog — full repo details + rating
 ```
+
+The `IntersectionObserverDirective` is a shared directive at `src/app/shared/directives/` — it
+accepts an `intersectionRoot` input so the sentinel fires relative to the scrollable list
+container rather than the browser viewport.
 
 ### Key layering rule
 
@@ -99,18 +105,34 @@ GithubTrendingReposRepository (infrastructure)
 ### State management
 
 Angular signals — no NgRx. For a single-feature app, signals give the same unidirectional data
-flow with far less boilerplate. The facade exposes two strictly separated layers of pagination state:
+flow with far less boilerplate. The facade exposes three strictly separated concepts:
 
 **API pagination state** (GitHub fetch tracking):
 `repos`, `isLoading`, `isLoadingMore`, `error`, `hasMore`, `currentPage`, `totalCount`, `ratings`
 
-**UI pagination state** (visible slice):
-`visiblePage`, `visibleRepos`, `visibleRangeStart`, `visibleRangeEnd`, `totalLoaded`, `canGoNext`, `canGoPrevious`
+**Display mode state** (presentation only — does not affect data loading):
+`displayMode`, `showPaginationControls`, `showInfiniteSentinel`
 
-A single API page (up to 100 repos) fills many UI pages (10 repos each). Additional API pages are
-fetched on demand only when the user navigates beyond what is already cached in memory.
+Initialised from the `?mode` query param on page load. Toggling in the UI calls `facade.setDisplayMode()` directly — no URL write-back needed for functionality, though a query param link like `?mode=infinite` is a convenient shareable demo link. Switching modes never triggers a re-fetch; both modes read from the same in-memory repo cache.
 
-All signals are consumed directly by components; no component manages its own pagination state.
+**UI presentation state** (slice + navigation — `visibleRepos` covers both modes):
+`visibleRepos`, `visiblePage`, `visibleRangeStart`, `visibleRangeEnd`, `totalLoaded`, `canGoNext`, `canGoPrevious`
+
+In **paginated** mode `visibleRepos` returns a PAGE_SIZE (10) slice of the cache. In **infinite** mode it returns the full accumulated list.
+
+**Three-way distinction:**
+
+| Concept | What it is |
+|---|---|
+| **API page** | A batch of up to 100 repos fetched from GitHub (`page=N` query param) |
+| **UI page** | A visible slice of 10 repos (paginated mode only) |
+| **Browsing mode** | How the user navigates the loaded list (`paginated` or `infinite`) |
+
+A single API page fills 10 UI pages. Additional API pages are fetched on demand — either when
+the user advances beyond the loaded set in paginated mode, or when the scroll sentinel fires in
+infinite mode. The data loading behaviour is identical regardless of browsing mode.
+
+All signals are consumed directly by components; no component manages its own data or navigation state.
 
 ---
 
@@ -125,7 +147,7 @@ All signals are consumed directly by components; no component manages its own pa
 | `@testing-library/jest-dom` | Expressive DOM matchers (`toBeVisible`, `toHaveTextContent`, etc.) |
 | `eslint` + `angular-eslint` | Linting with Angular-specific rules, ESLint 10 flat config |
 | `prettier` | Consistent code formatting |
-| `@playwright/test` | Critical-path E2E coverage — 4 scenarios, GitHub API mocked via `page.route()` |
+| `@playwright/test` | Critical-path E2E coverage — 5 scenarios, GitHub API mocked via `page.route()` |
 
 ---
 
@@ -172,11 +194,11 @@ Duration    6.80s
 ```
 *Both tests were the Angular starter placeholder tests, replaced in Step 2.*
 
-### Final run — Step 7
+### Final run — Step 8
 ```
-Test Files  11 passed (11)
-Tests       143 passed (143)
-Duration    10.17s
+Test Files  13 passed (13)
+Tests       175 passed (175)
+Duration    28.71s
 ```
 
 | File | Tests | Layer |
@@ -186,20 +208,23 @@ Duration    10.17s
 | `github-repo.mapper.spec.ts` | 5 | Unit — domain mapper |
 | `github-trending-repos.repository.spec.ts` | 12 | Integration — HTTP, all error kinds, deduplication |
 | `rating-persistence.service.spec.ts` | 8 | Unit — localStorage validation + recovery |
-| `trending-repos.facade.spec.ts` | 38 | Integration — all facade flows, pagination, ratings |
+| `trending-repos.facade.spec.ts` | 58 | Integration — all facade flows, both display modes, ratings |
 | `repo-card.component.spec.ts` | 12 | Component — card rendering, output, a11y |
 | `repo-list.component.spec.ts` | 15 | Component — all UI states |
 | `repo-pagination.component.spec.ts` | 15 | Component — pagination controls |
 | `star-rating.component.spec.ts` | 10 | Component — rendering, hover, interaction |
 | `repo-details-dialog.component.spec.ts` | 18 | Component — dialog rendering, save vs dismiss |
+| `display-mode-toggle.component.spec.ts` | 7 | Component — segmented control rendering + output |
+| `intersection-observer.directive.spec.ts` | 5 | Unit — IntersectionObserver directive |
 
-### E2E — Playwright (4 scenarios, 17 tests)
+### E2E — Playwright (5 scenarios, 24 tests)
 ```
 e2e/trending-repos.spec.ts
   ├── Initial page load (6 tests)
   ├── Pagination navigation (5 tests)
   ├── Repo details modal and rating (6 tests)
-  └── Error state (4 tests)
+  ├── Error state (4 tests)
+  └── Browsing mode toggle (7 tests)
 ```
 *E2E tests use `page.route()` to intercept GitHub API calls — no live network required.*
 
@@ -215,3 +240,4 @@ e2e/trending-repos.spec.ts
 | Google Fonts at runtime | Convenient for development. Self-host in production for privacy + performance. |
 | `localStorage` for ratings | Simple, no server dependency. Ratings are lost on browser data clear. |
 | Draggable dialog deferred | CDK DragDrop drag-to-reposition was intentionally not implemented. Accessibility and focus behaviour take priority; drag can be added if it can be proven regression-free. |
+| Browsing mode in URL, not localStorage | Mode resets to `paginated` on a fresh URL. This is intentional — the URL is a better source of truth for shareable demo links. Persisting to localStorage would be a small addition if stickiness across sessions is preferred. |

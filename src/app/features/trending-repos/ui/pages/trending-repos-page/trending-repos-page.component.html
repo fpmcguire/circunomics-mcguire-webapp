@@ -1,49 +1,76 @@
 <!--
-  Pagination controls appear both above and below the list (user preference).
-  The bindings are defined once in an ng-template to keep the template DRY.
+  Pagination controls template — defined once, rendered at top (always) and
+  bottom (mobile only via CSS) to avoid duplicating all the bindings.
 -->
 <ng-template #paginationControls>
-  <app-repo-pagination
-    [currentPage]="facade.visiblePage()"
-    [canGoPrevious]="facade.canGoPrevious()"
-    [canGoNext]="facade.canGoNext()"
-    [isLoadingMore]="facade.isLoadingMore()"
-    [rangeStart]="facade.visibleRangeStart()"
-    [rangeEnd]="facade.visibleRangeEnd()"
-    [totalLoaded]="facade.totalLoaded()"
-    (previousClick)="facade.goToPreviousPage()"
-    (nextClick)="facade.goToNextPage()"
-  />
+  <app-repo-pagination [currentPage]="facade.visiblePage()" [canGoPrevious]="facade.canGoPrevious()"
+    [canGoNext]="facade.canGoNext()" [isLoadingMore]="facade.isLoadingMore()" [rangeStart]="facade.visibleRangeStart()"
+    [rangeEnd]="facade.visibleRangeEnd()" [totalLoaded]="facade.totalLoaded()"
+    (previousClick)="facade.goToPreviousPage()" (nextClick)="facade.goToNextPage()" />
 </ng-template>
 
 <div class="repos-page">
+
+  <!-- ── Page header ─────────────────────────────────────────────────── -->
   <header class="repos-page__header">
-    <h1 class="repos-page__title" id="page-title" data-testid="trending-repos-page-title">
-      Trending Repositories
-    </h1>
-    <p class="repos-page__subtitle">Most starred open-source projects from the last 30 days</p>
-    @if (!facade.isLoading() && facade.totalCount() > 0) {
-      <p class="repos-page__count" aria-live="polite">
-        {{ facade.totalCount().toLocaleString() }} repositories found
-      </p>
-    }
+    <div class="repos-page__header-row">
+      <div>
+        <h1 class="repos-page__title" id="page-title" data-testid="trending-repos-page-title">
+          Trending Repositories
+        </h1>
+        <p class="repos-page__subtitle">Most starred open-source projects from the last 30 days</p>
+        @if (!facade.isLoading() && facade.totalCount() > 0) {
+        <p class="repos-page__count" aria-live="polite">
+          {{ facade.totalCount().toLocaleString() }} repositories found
+        </p>
+        }
+      </div>
+
+      <!-- Mode toggle: always visible so users can switch at any time -->
+      <app-display-mode-toggle [mode]="facade.displayMode()" (modeChange)="facade.setDisplayMode($event)" />
+    </div>
   </header>
 
-  @if (!facade.isLoading() && !facade.error() && facade.totalLoaded() > 0) {
-    <ng-container *ngTemplateOutlet="paginationControls" />
+  <!-- ── Top pagination (paginated mode · non-empty · non-loading) ───── -->
+  @if (facade.showPaginationControls() && !facade.isLoading() && !facade.error() && facade.totalLoaded() > 0) {
+  <ng-container *ngTemplateOutlet="paginationControls" />
   }
 
-  <app-repo-list
-    [repos]="facade.visibleRepos()"
-    [isLoading]="facade.isLoading()"
-    [error]="facade.error()"
-    [isEmpty]="facade.isEmpty()"
-    [ratings]="facade.ratings()"
-    (retryClick)="facade.retry()"
-    (nameClick)="onNameClick($event)"
-  />
+  <!-- ── Scrollable list container ────────────────────────────────────── -->
+  <!--
+    On non-mobile, this div is the scroll viewport: flex:1, overflow-y:auto.
+    The IntersectionObserverDirective on the sentinel uses this element as its
+    observation root so the sentinel fires when it enters *this* container,
+    not the browser viewport.
+  -->
+  <div class="repos-page__list-container" #listContainer>
 
-  @if (!facade.isLoading() && !facade.error() && facade.totalLoaded() > 0) {
+    <app-repo-list [repos]="facade.visibleRepos()" [isLoading]="facade.isLoading()" [error]="facade.error()"
+      [isEmpty]="facade.isEmpty()" [ratings]="facade.ratings()" (retryClick)="facade.retry()"
+      (nameClick)="onNameClick($event)" />
+
+    <!-- Infinite scroll sentinel — only rendered in infinite mode with more data -->
+    @if (facade.showInfiniteSentinel()) {
+    <div class="repos-page__sentinel" data-testid="trending-repos-infinite-sentinel" appIntersectionObserver
+      [intersectionRoot]="listContainerRef.nativeElement" (intersected)="onSentinelIntersected()" aria-hidden="true">
+    </div>
+    }
+
+    <!-- Loading-more spinner (infinite mode while fetching next API page) -->
+    @if (facade.isLoadingMore() && !facade.showPaginationControls()) {
+    <div class="repos-page__loading-more" data-testid="trending-repos-infinite-loading-more" aria-live="polite">
+      <span class="sr-only">Loading more repositories…</span>
+      <span class="repos-page__loading-more-spinner" aria-hidden="true"></span>
+    </div>
+    }
+
+  </div><!-- /.repos-page__list-container -->
+
+  <!-- ── Bottom pagination (paginated mode · mobile only via CSS) ──────── -->
+  @if (facade.showPaginationControls() && !facade.isLoading() && !facade.error() && facade.totalLoaded() > 0) {
+  <div class="repos-page__pagination--bottom">
     <ng-container *ngTemplateOutlet="paginationControls" />
+  </div>
   }
-</div>
+
+</div><!-- /.repos-page -->

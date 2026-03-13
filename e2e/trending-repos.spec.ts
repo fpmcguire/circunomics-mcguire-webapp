@@ -24,9 +24,7 @@ test.describe('Initial page load', () => {
   test('renders the page title', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByTestId('trending-repos-page-title')).toBeVisible();
-    await expect(page.getByTestId('trending-repos-page-title')).toHaveText(
-      'Trending Repositories',
-    );
+    await expect(page.getByTestId('trending-repos-page-title')).toHaveText('Trending Repositories');
   });
 
   test('shows the repo list after loading', async ({ page }) => {
@@ -286,5 +284,155 @@ test.describe('Error state', () => {
 
     await expect(page.getByTestId('trending-repos-error')).toBeVisible();
     await expect(page.getByTestId('trending-repos-list')).not.toBeVisible();
+  });
+});
+
+// ── 5. Display mode switching ─────────────────────────────────────────────────
+
+test.describe('Display mode switching', () => {
+  test.beforeEach(async ({ page }) => {
+    await mockGithubApi(page, FIFTEEN_REPOS, 15);
+  });
+
+  test('mode toggle is visible on page load', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByTestId('trending-repos-display-mode-toggle')).toBeVisible();
+  });
+
+  test('Paginated button is active by default', async ({ page }) => {
+    await page.goto('/');
+    const paginatedBtn = page.getByTestId('trending-repos-display-mode-paginated');
+    await expect(paginatedBtn).toHaveAttribute('aria-checked', 'true');
+    await expect(page.getByTestId('trending-repos-display-mode-infinite')).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+  });
+
+  test('pagination controls are visible in paginated mode', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByTestId('trending-repos-list')).toBeVisible();
+    await expect(page.getByTestId('trending-repos-pagination').first()).toBeVisible();
+  });
+
+  test('switching to Infinite mode hides pagination controls', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByTestId('trending-repos-list')).toBeVisible();
+
+    await page.getByTestId('trending-repos-display-mode-infinite').click();
+
+    await expect(page.getByTestId('trending-repos-pagination')).toHaveCount(0);
+  });
+
+  test('switching to Infinite mode shows all loaded repos', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByTestId('trending-repos-list')).toBeVisible();
+
+    // Paginated mode shows 10 of 15
+    await expect(page.getByTestId('trending-repos-list-item')).toHaveCount(10);
+
+    await page.getByTestId('trending-repos-display-mode-infinite').click();
+
+    // Infinite mode shows all 15 loaded repos
+    await expect(page.getByTestId('trending-repos-list-item')).toHaveCount(15);
+  });
+
+  test('switching to Infinite mode shows the scroll sentinel', async ({ page }) => {
+    // Remove the describe-level route mock so this test can enforce hasMore=true.
+    await page.unroute('**/api.github.com/search/repositories**');
+
+    // `hasMore` stays true only if the API page is full (per_page=100) and
+    // total_count indicates additional pages.
+    const firstApiPage = Array.from({ length: 100 }, (_, i) => makeRepo(i + 1));
+
+    await page.route('**/api.github.com/search/repositories**', (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          total_count: 500,
+          incomplete_results: false,
+          items: firstApiPage,
+        }),
+      });
+    });
+
+    await page.goto('/');
+    await expect(page.getByTestId('trending-repos-list')).toBeVisible();
+
+    await page.getByTestId('trending-repos-display-mode-infinite').click();
+
+    // Depending on timing, the sentinel can be in DOM or already consumed by
+    // IntersectionObserver and replaced by the loading-more state.
+    const sentinel = page.getByTestId('trending-repos-infinite-sentinel');
+    const loadingMore = page.getByTestId('trending-repos-infinite-loading-more');
+
+    await expect
+      .poll(async () => (await sentinel.count()) + (await loadingMore.count()), {
+        timeout: 10_000,
+      })
+      .toBeGreaterThan(0);
+  });
+
+  test('switching back to Paginated mode restores pagination controls', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByTestId('trending-repos-list')).toBeVisible();
+
+    await page.getByTestId('trending-repos-display-mode-infinite').click();
+    await expect(page.getByTestId('trending-repos-pagination')).toHaveCount(0);
+
+    await page.getByTestId('trending-repos-display-mode-paginated').click();
+    await expect(page.getByTestId('trending-repos-pagination').first()).toBeVisible();
+  });
+
+  test('?mode=infinite query param initialises infinite mode', async ({ page }) => {
+    await page.goto('/?mode=infinite');
+    await expect(page.getByTestId('trending-repos-list')).toBeVisible();
+
+    await expect(page.getByTestId('trending-repos-display-mode-infinite')).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    await expect(page.getByTestId('trending-repos-pagination')).toHaveCount(0);
+  });
+
+  test('?mode=paginated query param initialises paginated mode', async ({ page }) => {
+    await page.goto('/?mode=paginated');
+    await expect(page.getByTestId('trending-repos-list')).toBeVisible();
+
+    await expect(page.getByTestId('trending-repos-display-mode-paginated')).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    await expect(page.getByTestId('trending-repos-pagination').first()).toBeVisible();
+  });
+});
+
+// ── 6. Rating persists across mode switches ───────────────────────────────────
+
+test.describe('Ratings persist across mode switches', () => {
+  test.beforeEach(async ({ page }) => {
+    await mockGithubApi(page, EIGHT_REPOS, 8);
+  });
+
+  test('rating set in paginated mode is visible after switching to infinite', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByTestId('trending-repos-list')).toBeVisible();
+
+    // Rate the first repo
+    await page.getByTestId('trending-repos-list-item-name-button').first().click();
+    await page.getByTestId('repo-rating-star-3').click();
+    await page.getByRole('button', { name: /save rating/i }).click();
+
+    // Verify rating is shown in paginated mode
+    const firstCardPaginated = page.getByTestId('trending-repos-list-item').first();
+    await expect(firstCardPaginated.getByTestId('trending-repos-list-item-rating')).toBeVisible();
+
+    // Switch to infinite mode
+    await page.getByTestId('trending-repos-display-mode-infinite').click();
+
+    // Rating should still be visible on the same card
+    const firstCardInfinite = page.getByTestId('trending-repos-list-item').first();
+    await expect(firstCardInfinite.getByTestId('trending-repos-list-item-rating')).toBeVisible();
   });
 });

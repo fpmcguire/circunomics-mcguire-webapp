@@ -22,7 +22,11 @@ This document is derived from the original `WebAppChallenge` brief.
    - owner avatar
 4. The user can keep scrolling and additional results appear via pagination.
 
-> **Implementation note — UI pagination (Step 5.5):** User story 4 in the original brief implies infinite scroll. The implemented solution instead uses **explicit previous/next pagination controls** showing 10 repositories per visible page. This is a deliberate product enhancement introduced at stakeholder request after Step 5 shipped. The underlying GitHub API is still fetched incrementally (new API pages are loaded only when the user navigates beyond what is already cached), so the data-loading behaviour described in the Data source requirements below is fully preserved. See `ROADMAP.md` Step 5.5 for full rationale and design decisions.
+> **Implementation note — browsing modes:** User story 4 in the original brief implies infinite scroll. The app now supports **both** browsing modes simultaneously:
+> - **Paged view** (default) — explicit Previous / Next controls, 10 repos per visible page
+> - **Infinite scroll** — auto-loads as you scroll, accumulates the full list
+>
+> Paged view was introduced as a UX experiment at Step 5.5. Infinite scroll was restored alongside it at Step 8, positioning both as experiment-ready browsing experiences selectable via a UI toggle or `?mode=infinite` / `?mode=paginated` query parameter. The underlying GitHub API is fetched incrementally in both modes — new API pages are loaded only when the user navigates or scrolls beyond what is already cached. See `ROADMAP.md` Steps 5.5 and 8 for full rationale.
 
 ### Extra-credit user stories
 1. Clicking the repository name opens a modal window.
@@ -113,6 +117,6 @@ A submission meets the challenge brief when:
 - it is an Angular app
 - it fetches and displays the most-starred GitHub repositories created in the last 30 days
 - each row shows all required repository details
-- users can browse through all results (original brief specified infinite scroll; implemented solution uses explicit previous/next UI pagination per Step 5.5 — see `ROADMAP.md` for full rationale)
+- users can browse through all results in either browsing mode: infinite scroll (original brief) or explicit previous/next pagination (Step 5.5 enhancement) — both modes available simultaneously via UI toggle or `?mode=` query parameter
 - extra-credit modal and rating behavior work if implemented
 - project documentation and test run results are included

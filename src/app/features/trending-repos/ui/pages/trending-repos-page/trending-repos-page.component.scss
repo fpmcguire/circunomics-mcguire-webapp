@@ -1,14 +1,79 @@
-.repos-page {
-  max-width: var(--content-max-width);
-  margin: 0 auto;
-  padding: var(--space-8) var(--space-6) var(--space-12);
+// =============================================================================
+// TrendingReposPageComponent
+//
+// Layout strategy (non-mobile ≥ 641px):
+//
+//   body [height:100dvh · flex col]
+//   └── app-root [flex:1 · flex col]
+//       └── main.app-main [flex:1 · overflow:hidden · flex col]
+//           └── .app-main__container [flex:1 · flex col]
+//               └── app-trending-repos-page :host [flex:1 · flex col]
+//                   └── .repos-page [flex:1 · flex col]
+//                       ├── .repos-page__header     (static)
+//                       ├── app-repo-pagination     (static, when visible)
+//                       ├── .repos-page__list-container  ← flex:1 · overflow-y:auto
+//                       └── .repos-page__pagination--bottom  (hidden non-mobile)
+//
+// The footer lives outside app-main and is therefore always visible.
+// On mobile (≤ 640px) this constraint is released: body has auto height,
+// app-main has normal flow, and the list scrolls with the document.
+// =============================================================================
 
-  @media (max-width: 400px) {
-    padding: var(--space-6) var(--space-4) var(--space-10);
+// :host is a flex child of .app-main__container (non-mobile).
+:host {
+  display: block;
+
+  @media (min-width: 641px) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+}
+
+.repos-page {
+  // Mobile: normal block layout — page grows as content expands
+  // Non-mobile: flex column so list-container can fill remaining height
+  @media (min-width: 641px) {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    // Clip any accidental overflow in intermediate layout states
+    overflow: hidden;
   }
 
+  @media (max-width: 640px) {
+    padding-bottom: var(--space-12);
+  }
+
+  @media (max-width: 400px) {
+    padding-bottom: var(--space-10);
+  }
+
+  // ── Page header ───────────────────────────────────────────────────────────
+
   &__header {
+    flex-shrink: 0;
     margin-bottom: var(--space-6);
+
+    @media (max-width: 400px) {
+      margin-bottom: var(--space-4);
+    }
+  }
+
+  // Flex row: heading group on the left, mode toggle on the right.
+  // Stacks vertically on narrow viewports.
+  &__header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+
+    @media (max-width: 520px) {
+      flex-direction: column;
+      gap: var(--space-3);
+    }
   }
 
   &__title {
@@ -30,5 +95,78 @@
     font-size: var(--text-xs);
     color: var(--color-text-muted);
     font-weight: var(--weight-medium);
+  }
+
+  // ── Scrollable list container ─────────────────────────────────────────────
+  //
+  // Non-mobile: fills remaining height between pagination controls and footer.
+  //   - flex:1 takes all available flex space in the column
+  //   - overflow-y:auto adds a scrollbar when content exceeds the container
+  //   - scrollbar-gutter:stable reserves space up-front to prevent layout
+  //     shifts when the scrollbar appears/disappears during API loading
+  //
+  // Mobile: height is unconstrained — content grows and the page scrolls.
+
+  &__list-container {
+    @media (min-width: 641px) {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      scrollbar-gutter: stable;
+    }
+  }
+
+  // ── Infinite scroll affordances ───────────────────────────────────────────
+
+  // 1px tall sentinel — detected by IntersectionObserver; no visual footprint
+  &__sentinel {
+    height: 1px;
+    margin-top: var(--space-4);
+  }
+
+  // Spinner shown while the next API page is loading (infinite mode)
+  &__loading-more {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: var(--space-8) 0;
+  }
+
+  &__loading-more-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--color-border-strong);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: page-loading-spin 0.7s linear infinite;
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+      border-top-color: var(--color-border-strong);
+    }
+  }
+
+  // ── Bottom pagination (mobile only) ───────────────────────────────────────
+  //
+  // Non-mobile: hidden — the single top pagination bar is sufficient; the
+  //   scrollable container makes the list always visible without needing a
+  //   second set of controls at the bottom.
+  //
+  // Mobile: visible — the list naturally extends below the fold, so a second
+  //   set of controls at the bottom reduces scrolling back to the top.
+
+  &__pagination--bottom {
+    flex-shrink: 0;
+
+    @media (min-width: 641px) {
+      display: none;
+    }
+  }
+}
+
+@keyframes page-loading-spin {
+  to {
+    transform: rotate(360deg);
   }
 }

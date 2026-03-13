@@ -5,6 +5,10 @@ import { GithubRepo } from '../../domain/models/github-repo.model';
 import { AppError } from '../../../../shared/models/app-error.model';
 import { RatingPersistenceService } from '../../infrastructure/datasources/rating-persistence.service';
 import { INITIAL_STATE, RatingsMap, TrendingReposState } from '../state/trending-repos.state';
+import {
+  DEFAULT_DISPLAY_MODE,
+  RepoListDisplayMode,
+} from '../../domain/models/repo-list-display-mode.model';
 
 /** Number of repos requested per GitHub API page. */
 const API_PER_PAGE = 100;
@@ -13,15 +17,16 @@ const API_PER_PAGE = 100;
 const DAY_RANGE = 30;
 
 /**
- * Number of repos visible per UI page.
+ * Number of repos visible per UI page in **paginated** mode.
  *
  * Terminology:
- *  - **API page** — a batch of up to API_PER_PAGE repos fetched from GitHub
- *  - **UI page**  — a visible slice of PAGE_SIZE repos rendered to the user
+ *  - **API page**     — a batch of up to API_PER_PAGE repos fetched from GitHub.
+ *  - **UI page**      — a visible slice of PAGE_SIZE repos; only relevant in paginated mode.
+ *  - **display mode** — whether the user is browsing via infinite scroll or pagination.
  *
- * A single API page fills many UI pages. UI pages are derived from the
- * in-memory repo cache; additional API pages are fetched on demand when
- * the user advances beyond what is already loaded.
+ * A single API page fills many UI pages. UI pages are derived from the in-memory
+ * repo cache; additional API pages are fetched on demand when the user advances
+ * beyond what is already loaded.
  */
 const PAGE_SIZE = 10;
 
@@ -34,6 +39,7 @@ const PAGE_SIZE = 10;
  * Responsibilities:
  *  - Load and paginate trending repos via the repository abstraction
  *  - Expose reactive state as read-only computed signals
+ *  - Manage display mode (infinite scroll vs paginated)
  *  - Manage UI pagination (visible page / slice) independently of API pagination
  *  - Manage rating state and sync with localStorage via RatingPersistenceService
  *
@@ -49,9 +55,10 @@ export class TrendingReposFacade {
 
   private readonly _state = signal<TrendingReposState>(INITIAL_STATE);
   private readonly _ratings = signal<RatingsMap>(this.persistence.load());
+  private readonly _displayMode = signal<RepoListDisplayMode>(DEFAULT_DISPLAY_MODE);
 
   /**
-   * Current UI page number (1-indexed).
+   * Current UI page number (1-indexed). Only meaningful in paginated mode.
    * Separate from the API page counter — one API page covers many UI pages.
    */
   private readonly _uiPage = signal(1);
@@ -91,7 +98,32 @@ export class TrendingReposFacade {
       !this._state().isLoading && this._state().error === null && this._state().repos.length === 0,
   );
 
-  // --- UI pagination signals ---
+  // --- Display mode signals ---
+
+  /** The current list-browsing display mode. */
+  readonly displayMode = this._displayMode.asReadonly();
+
+  /**
+   * True when pagination controls (Previous / Next) should be shown.
+   * Only applicable in paginated mode.
+   */
+  readonly showPaginationControls = computed(() => this._displayMode() === 'paginated');
+
+  /**
+   * True when the infinite-scroll sentinel should be rendered.
+   * Only applicable in infinite mode, and only while there is more data to load.
+   */
+  readonly showInfiniteSentinel = computed(() => {
+    const state = this._state();
+    return (
+      this._displayMode() === 'infinite' &&
+      state.hasMore &&
+      !state.isLoading &&
+      !state.isLoadingMore
+    );
+  });
+
+  // --- UI pagination signals (paginated mode) ---
 
   /** Current 1-indexed UI page number. */
   readonly visiblePage = this._uiPage.asReadonly();
@@ -99,8 +131,16 @@ export class TrendingReposFacade {
   /** The configured page size (constant; exposed for templates and tests). */
   readonly pageSize = PAGE_SIZE;
 
-  /** The slice of loaded repos visible on the current UI page. */
+  /**
+   * The repos to display to the user.
+   *
+   *  - **paginated mode**: a PAGE_SIZE slice of the loaded repo cache.
+   *  - **infinite mode**: the full accumulated list of loaded repos.
+   */
   readonly visibleRepos = computed(() => {
+    if (this._displayMode() === 'infinite') {
+      return this._state().repos;
+    }
     const start = (this._uiPage() - 1) * PAGE_SIZE;
     return this._state().repos.slice(start, start + PAGE_SIZE);
   });
@@ -121,21 +161,35 @@ export class TrendingReposFacade {
   readonly totalLoaded = computed(() => this._state().repos.length);
 
   /**
-   * True when the user can advance to the next UI page.
+   * True when the user can advance to the next UI page (paginated mode).
    * Requires either already-loaded data for the next page, or more API pages
    * available to fetch. Disabled while any fetch is in-flight.
    */
   readonly canGoNext = computed(() => {
     const state = this._state();
     if (state.isLoading || state.isLoadingMore) return false;
-    const nextPageStartIndex = this._uiPage() * PAGE_SIZE; // 0-indexed
+    const nextPageStartIndex = this._uiPage() * PAGE_SIZE;
     return nextPageStartIndex < state.repos.length || state.hasMore;
   });
 
-  /** True when the user can go back to a previous UI page. */
+  /** True when the user can go back to a previous UI page (paginated mode). */
   readonly canGoPrevious = computed(() => this._uiPage() > 1);
 
   // --- Actions ---
+
+  /**
+   * Switch the list-browsing display mode.
+   *
+   * Switching to paginated resets the UI page to 1 so the user starts at the
+   * beginning of the loaded set. Switching to infinite has no page-state side
+   * effects — the full loaded list is shown immediately.
+   */
+  setDisplayMode(mode: RepoListDisplayMode): void {
+    this._displayMode.set(mode);
+    if (mode === 'paginated') {
+      this._uiPage.set(1);
+    }
+  }
 
   /**
    * Load the first page of trending repos.
@@ -148,7 +202,18 @@ export class TrendingReposFacade {
   }
 
   /**
-   * Advance to the next UI page.
+   * Load the next API page of repos (infinite scroll mode).
+   *
+   * Delegates to `_triggerNextApiPage` which carries all in-flight and
+   * boundary guards. No-ops if already fetching, no more pages, or initial
+   * load is still running.
+   */
+  loadMore(): void {
+    this._triggerNextApiPage();
+  }
+
+  /**
+   * Advance to the next UI page (paginated mode).
    *
    * If the required data is already in the in-memory cache, the page advances
    * instantly. If not, an API fetch is triggered and the page advances only
@@ -157,20 +222,18 @@ export class TrendingReposFacade {
   goToNextPage(): void {
     if (!this.canGoNext()) return;
     const nextUiPage = this._uiPage() + 1;
-    const nextPageStartIndex = this._uiPage() * PAGE_SIZE; // 0-indexed first item of next page
+    const nextPageStartIndex = this._uiPage() * PAGE_SIZE;
 
     if (nextPageStartIndex < this._state().repos.length) {
-      // Data already loaded — instant navigation
       this._uiPage.set(nextUiPage);
     } else {
-      // Need more API data — record desired page and fetch
       this._pendingUiPage = nextUiPage;
       this._triggerNextApiPage();
     }
   }
 
   /**
-   * Go back to the previous UI page.
+   * Go back to the previous UI page (paginated mode).
    * No-ops on page 1.
    */
   goToPreviousPage(): void {
@@ -248,7 +311,6 @@ export class TrendingReposFacade {
             error: null,
           });
 
-          // Advance UI page now that the required data has arrived
           if (this._pendingUiPage !== null) {
             this._uiPage.set(this._pendingUiPage);
             this._pendingUiPage = null;
@@ -266,20 +328,12 @@ export class TrendingReposFacade {
       });
   }
 
-  /**
-   * Merges two repo arrays, deduplicating by ID.
-   * Repos from incoming that already exist in the current list are dropped.
-   */
   private _mergeRepos(existing: GithubRepo[], incoming: GithubRepo[]): GithubRepo[] {
     const existingIds = new Set(existing.map((r) => r.id));
     return [...existing, ...incoming.filter((r) => !existingIds.has(r.id))];
   }
 
-  /**
-   * Immutable partial state update.
-   */
   private _patch(patch: Partial<TrendingReposState>): void {
     this._state.update((current) => ({ ...current, ...patch }));
   }
 }
-
