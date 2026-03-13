@@ -4,6 +4,29 @@
 
 ---
 
+## v2.0.0 — Post-Step-8 Hygiene Pass ✅ DONE
+
+**Goal:** Submission-clean repo — no committed generated artifacts, accurate docs, consistent wording.
+
+### Delivered
+- Removed committed `playwright-report/index.html` (generated output; covered by `.gitignore`)
+- Removed `src/app/core/config/.gitkeep` and `src/app/shared/pipes/.gitkeep` — both directories were never populated and had no committed content beyond the placeholder
+- Fixed `docs/ARCHITECTURE.md` — two passages incorrectly described display mode as living in the page component and being derived from `queryParams` via `toSignal()`; corrected to reflect the actual implementation: `_displayMode` signal on the facade, initialised once from `ActivatedRoute.snapshot` at page load
+- Polished pagination count wording: range indicator now reads `Showing X–Y of Z loaded`; page header reads `N repositories found on GitHub` — the two numbers are now clearly distinct
+- Refactored E2E fixtures into `e2e/helpers.ts` (`makeRepo` factory, `FIFTEEN_REPOS`, `EIGHT_REPOS`, `mockGithubApi`, `mockGithubRateLimit`) — shared across all describe blocks, no inline duplication
+- Fixed sentinel E2E test — 15 items with `perPage=100` yields `hasMore=false` so the sentinel never appeared; test now mocks a full 100-item first page; assertion uses `poll()` to handle the race between sentinel appearance and immediate IntersectionObserver fire
+- Updated `TESTING.md` E2E file tree to match actual describe block names
+- Bumped `package.json` version to `2.0.0`
+
+### Verification
+| Check | Result |
+|---|---|
+| `ng build` | ✅ Clean |
+| `ng test` | ✅ 175/175 passing (13 files) |
+| `ng lint` | ✅ All files pass |
+
+---
+
 ## Step 1 — Tooling Setup ✅ DONE
 
 **Goal:** Clean, verified baseline with all tooling in place before any feature work.
@@ -39,15 +62,15 @@
 - Full feature-driven folder structure created (explicit `mkdir` — no brace expansion):
   ```
   src/app/
-    core/config|utils|services/
-    shared/ui/header|models|pipes|directives/
+    core/utils|services/
+    shared/ui/header|models|directives/
     features/trending-repos/
       domain/models|mappers|repositories/
       application/facades|state/
       infrastructure/repositories|datasources/
       ui/pages|components|dialogs/
   ```
-- `.gitkeep` in all empty directories so scaffold is fully tracked by git
+- `.gitkeep` added to empty scaffold directories at creation time; removed in v2.0.0 once all directories had real content (`core/config/` and `shared/pipes/` were never populated)
 - SCSS design system: `_tokens.scss`, `_reset.scss`, `_typography.scss`, `_utilities.scss`
 - `HeaderComponent` — sticky, accessible, `routerLinkActive` + `ariaCurrentWhenActive="page"`
 - App shell — `<app-header>` + `<main id="main-content">` + `<router-outlet>`

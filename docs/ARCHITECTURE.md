@@ -176,10 +176,12 @@ getRating(id): number
 | **UI page** | A visible slice of 10 repos rendered in paginated mode (1-indexed) |
 | **Browsing mode** | How the user navigates the loaded list — `paginated` or `infinite` |
 
-Browsing mode is presentation-only and lives in the page component, not the facade. It does not
-affect how or when data is fetched — both modes use the same repo cache and the same API paging
-logic. The only difference is whether `visibleRepos` (a 10-item slice) or `repos` (the full
-accumulated list) is passed to the list component.
+Browsing mode is presentation-only and does not affect how or when data is fetched — both modes
+use the same repo cache and the same API paging logic. `_displayMode` is a private signal on the
+facade; `visibleRepos` returns a 10-item slice in paginated mode and the full accumulated list in
+infinite mode. The page component reads `?mode=` once at `ngOnInit` via `ActivatedRoute.snapshot`
+and calls `facade.setDisplayMode()` — the facade signal is the runtime source of truth, not the
+URL. Switching modes in the UI does not write back to the URL.
 
 **Why a facade over multiple services:**
 - One place to look for all feature state
@@ -241,7 +243,7 @@ RepoListComponent → RepoCardComponent
 | Initial load | `signal<boolean>` isLoading |
 | Subsequent pages | `signal<boolean>` isLoadingMore (API page 2+ in-flight) |
 | UI pagination | `signal<number>` visiblePage + computed `visibleRepos`, `canGoNext`, `canGoPrevious` |
-| Browsing mode | `Signal<BrowsingMode>` derived from `ActivatedRoute.queryParams` via `toSignal()` — URL is source of truth; switching never re-fetches |
+| Browsing mode | `signal<RepoListDisplayMode>` on the facade (`_displayMode`) — initialised from `?mode=` query param once at page load; `setDisplayMode()` is the only mutator; URL is an init mechanism, not live source of truth; switching never re-fetches |
 | Error state | `signal<AppError \| null>` — typed, resettable |
 | Ratings | `signal<Record<number, number>>` + localStorage sync |
 | Derived state | `computed()` — `isEmpty`, `visibleRangeStart`, `visibleRangeEnd`, etc. |

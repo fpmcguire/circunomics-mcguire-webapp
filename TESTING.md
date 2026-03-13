@@ -168,13 +168,14 @@ trending-repos.facade.spec.ts    ← integration test (primary coverage)
 E2E tests live in `e2e/`:
 ```
 e2e/
-  helpers.ts                     ← mock data factory + page.route() interceptors
+  helpers.ts                     ← mock data factory (makeRepo, FIFTEEN_REPOS, EIGHT_REPOS) + page.route() interceptors
   trending-repos.spec.ts         ← critical user journey tests
     ├── Initial page load
     ├── Pagination navigation
     ├── Repo details modal and rating
     ├── Error state
-    └── Browsing mode toggle
+    ├── Display mode switching
+    └── Ratings persist across mode switches
 ```
 
 ---

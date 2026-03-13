@@ -90,9 +90,9 @@ test.describe('Pagination navigation', () => {
 
     await page.getByTestId('trending-repos-pagination-next-button').first().click();
 
-    // Range should show "Showing 11–15 of 15"
+    // Keep this tolerant to copy additions like the current "loaded" suffix.
     const rangeIndicator = page.getByTestId('trending-repos-pagination-range-indicator').first();
-    await expect(rangeIndicator).toHaveText('Showing 11–15 of 15');
+    await expect(rangeIndicator).toContainText('Showing 11–15 of 15');
   });
 
   test('Previous button navigates back to page 1', async ({ page }) => {
@@ -344,8 +344,10 @@ test.describe('Display mode switching', () => {
     // `hasMore` stays true only if the API page is full (per_page=100) and
     // total_count indicates additional pages.
     const firstApiPage = Array.from({ length: 100 }, (_, i) => makeRepo(i + 1));
+    let apiCallCount = 0;
 
     await page.route('**/api.github.com/search/repositories**', (route) => {
+      apiCallCount++;
       route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -362,16 +364,14 @@ test.describe('Display mode switching', () => {
 
     await page.getByTestId('trending-repos-display-mode-infinite').click();
 
-    // Depending on timing, the sentinel can be in DOM or already consumed by
-    // IntersectionObserver and replaced by the loading-more state.
-    const sentinel = page.getByTestId('trending-repos-infinite-sentinel');
-    const loadingMore = page.getByTestId('trending-repos-infinite-loading-more');
-
+    // With very fast mocked responses, sentinel/loading-more can appear and
+    // disappear between poll ticks. A stable signal is that infinite mode
+    // triggers at least one additional API fetch after the initial load.
     await expect
-      .poll(async () => (await sentinel.count()) + (await loadingMore.count()), {
+      .poll(() => apiCallCount, {
         timeout: 10_000,
       })
-      .toBeGreaterThan(0);
+      .toBeGreaterThan(1);
   });
 
   test('switching back to Paginated mode restores pagination controls', async ({ page }) => {

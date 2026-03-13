@@ -21,7 +21,7 @@
         <p class="repos-page__subtitle">Most starred open-source projects from the last 30 days</p>
         @if (!facade.isLoading() && facade.totalCount() > 0) {
         <p class="repos-page__count" aria-live="polite">
-          {{ facade.totalCount().toLocaleString() }} repositories found
+          {{ facade.totalCount().toLocaleString() }} repositories found on GitHub
         </p>
         }
       </div>
