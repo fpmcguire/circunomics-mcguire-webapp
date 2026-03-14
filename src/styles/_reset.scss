@@ -32,6 +32,8 @@ body {
   // list container a precise remaining height — footer always visible.
   // Mobile: normal document height; page scrolls naturally.
   @media (min-width: 641px) {
+    // Fallback first, then dynamic viewport when supported.
+    height: 100vh;
     height: 100dvh;
     display: flex;
     flex-direction: column;

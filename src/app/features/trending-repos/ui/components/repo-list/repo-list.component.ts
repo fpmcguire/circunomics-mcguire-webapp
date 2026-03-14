@@ -36,10 +36,13 @@ export class RepoListComponent {
 
   get errorMessage(): string {
     if (this.error?.kind === 'rateLimit') {
-      return 'You have hit the GitHub API rate limit. Add a personal access token in environment.local.ts to increase your limit, or wait a moment and try again.';
+      return 'GitHub API rate limit has been hit. Try again retries immediately; if the limit is still active, wait a few minutes and retry. You can add a personal access token in environment.local.ts to increase your limit.';
     }
     if (this.error?.kind === 'network') {
-      return 'Unable to reach GitHub. Check your connection and try again.';
+      return 'Unable to reach GitHub. Check your connection and try again. Try again retries the last request immediately.';
+    }
+    if (this.error?.kind === 'unknown' && this.error.statusCode === 403) {
+      return 'GitHub rejected the request (403). This can be a temporary API limit or permission issue. Try again retries immediately; if it keeps failing, wait a few minutes and retry.';
     }
     return this.error?.message ?? 'An unexpected error occurred.';
   }

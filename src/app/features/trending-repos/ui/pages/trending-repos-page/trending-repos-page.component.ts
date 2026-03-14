@@ -71,6 +71,30 @@ export class TrendingReposPageComponent implements OnInit {
   }
 
   /**
+   * Return to the first paginated page and reset list scroll position.
+   */
+  onTopClick(): void {
+    this.facade.goToFirstPage();
+    this._scrollListToTop();
+  }
+
+  /**
+   * Go to previous UI page and reset list scroll to top.
+   */
+  onPreviousClick(): void {
+    this.facade.goToPreviousPage();
+    this._scrollListToTop();
+  }
+
+  /**
+   * Go to next UI page and reset list scroll to top.
+   */
+  onNextClick(): void {
+    this.facade.goToNextPage();
+    this._scrollListToTop();
+  }
+
+  /**
    * Opens the repo details dialog when a card name is clicked.
    *
    * CDK Dialog handles focus trap, Escape key, backdrop click, and focus
@@ -107,5 +131,9 @@ export class TrendingReposPageComponent implements OnInit {
     if (param === 'infinite' || param === 'paginated') {
       this.facade.setDisplayMode(param);
     }
+  }
+
+  private _scrollListToTop(): void {
+    this.listContainerRef.nativeElement.scrollTo({ top: 0, behavior: 'auto' });
   }
 }

@@ -6,7 +6,7 @@
   <app-repo-pagination [currentPage]="facade.visiblePage()" [canGoPrevious]="facade.canGoPrevious()"
     [canGoNext]="facade.canGoNext()" [isLoadingMore]="facade.isLoadingMore()" [rangeStart]="facade.visibleRangeStart()"
     [rangeEnd]="facade.visibleRangeEnd()" [totalLoaded]="facade.totalLoaded()"
-    (previousClick)="facade.goToPreviousPage()" (nextClick)="facade.goToNextPage()" />
+    (topClick)="onTopClick()" (previousClick)="onPreviousClick()" (nextClick)="onNextClick()" />
 </ng-template>
 
 <div class="repos-page">
@@ -32,7 +32,7 @@
   </header>
 
   <!-- ── Top pagination (paginated mode · non-empty · non-loading) ───── -->
-  @if (facade.showPaginationControls() && !facade.isLoading() && !facade.error() && facade.totalLoaded() > 0) {
+  @if (facade.showPaginationControls() && !facade.isLoading() && facade.totalLoaded() > 0) {
   <ng-container *ngTemplateOutlet="paginationControls" />
   }
 
@@ -67,7 +67,7 @@
   </div><!-- /.repos-page__list-container -->
 
   <!-- ── Bottom pagination (paginated mode · mobile only via CSS) ──────── -->
-  @if (facade.showPaginationControls() && !facade.isLoading() && !facade.error() && facade.totalLoaded() > 0) {
+  @if (facade.showPaginationControls() && !facade.isLoading() && facade.totalLoaded() > 0) {
   <div class="repos-page__pagination--bottom">
     <ng-container *ngTemplateOutlet="paginationControls" />
   </div>

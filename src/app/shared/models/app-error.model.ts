@@ -25,12 +25,14 @@ export const APP_ERRORS = {
   }),
   rateLimitForbidden: (): AppError => ({
     kind: 'rateLimit',
-    message: 'GitHub API rate limit reached (403). Add a GitHub token to increase your limit.',
+    message:
+      'GitHub API rate limit reached (403). Try again retries immediately; if the limit is still active, wait a few minutes and retry, or add a GitHub token to increase your limit.',
     statusCode: 403,
   }),
   unknown: (statusCode?: number): AppError => ({
     kind: 'unknown',
-    message: 'An unexpected error occurred. Please try again.',
+    message:
+      'GitHub request failed unexpectedly. Try again retries the last request immediately. If this persists, wait a few minutes and try again.',
     statusCode,
   }),
 } as const;

@@ -8,6 +8,17 @@
 @use 'styles/typography' as *;
 @use 'styles/utilities' as *;
 
+// Desktop shell fallback: keep app-root in the flex chain even if component
+// host styling is unavailable during hot reload / cache edge cases.
+@media (min-width: 641px) {
+  app-root {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+}
+
 // =============================================================================
 // CDK Dialog overlay — applied globally because the overlay lives outside the
 // component tree and cannot be targeted by component-scoped styles.

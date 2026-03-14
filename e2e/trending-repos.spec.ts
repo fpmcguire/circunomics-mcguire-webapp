@@ -93,6 +93,24 @@ test.describe('Pagination navigation', () => {
     await expect(cards).toHaveCount(5);
   });
 
+  test('Top button appears off page 1 and returns to page 1 when clicked', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByTestId('trending-repos-list')).toBeVisible();
+
+    const topButton = page.getByTestId('trending-repos-pagination-top-button').first();
+    const pageIndicator = page.getByTestId('trending-repos-pagination-page-indicator').first();
+
+    await expect(topButton).toHaveCount(0);
+
+    await page.getByTestId('trending-repos-pagination-next-button').first().click();
+    await expect(pageIndicator).toHaveText('Page 2');
+    await expect(topButton).toBeVisible();
+
+    await topButton.click();
+    await expect(pageIndicator).toHaveText('Page 1');
+    await expect(page.getByTestId('trending-repos-list-item')).toHaveCount(10);
+  });
+
   test('range indicator updates on page 2', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByTestId('trending-repos-list')).toBeVisible();
@@ -150,14 +168,17 @@ test.describe('Pagination navigation', () => {
     // This click requires API page 2 and will return 403.
     await nextButton.click();
 
-    // App should keep already loaded data interactive, without collapsing to
-    // global error UI.
-    await expect(pageIndicator).toHaveText('Page 10');
+    // App should keep already loaded data interactive and show retry UI.
     await expect(page.getByTestId('trending-repos-list')).toBeVisible();
     await expect(page.getByText('repo-91').first()).toBeVisible();
     await expect(page.getByTestId('trending-repos-display-mode-toggle')).toBeVisible();
-    await expect(page.getByTestId('trending-repos-error')).toHaveCount(0);
-    await expect(nextButton).toBeDisabled();
+    await expect(page.getByTestId('trending-repos-error')).toBeVisible();
+    await expect(page.getByTestId('trending-repos-error-retry')).toBeVisible();
+
+    // Switching to infinite mode must remain usable with already loaded repos.
+    await page.getByTestId('trending-repos-display-mode-infinite').click();
+    await expect(page.getByTestId('trending-repos-pagination')).toHaveCount(0);
+    await expect(page.getByTestId('trending-repos-list-item')).toHaveCount(100);
   });
 
   test('Previous button navigates back to page 1', async ({ page }) => {
@@ -182,6 +203,47 @@ test.describe('Pagination navigation', () => {
 
     await page.getByTestId('trending-repos-pagination-next-button').first().click();
     await expect(pageIndicator).toHaveText('Page 2');
+  });
+
+  test('Next and Previous reset paginated list scroll to top', async ({ page }) => {
+    await page.unroute('**/api.github.com/search/repositories**');
+
+    const firstApiPage = Array.from({ length: 100 }, (_, i) => makeRepo(i + 1));
+    await page.route('**/api.github.com/search/repositories**', (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          total_count: 500,
+          incomplete_results: false,
+          items: firstApiPage,
+        }),
+      });
+    });
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/');
+    await expect(page.getByTestId('trending-repos-list')).toBeVisible();
+
+    const listContainer = page.locator('.repos-page__list-container').first();
+    await expect(listContainer).toBeVisible();
+
+    await listContainer.evaluate((el) => {
+      el.scrollTop = el.scrollHeight;
+    });
+    const scrolledDown = await listContainer.evaluate((el) => el.scrollTop);
+    expect(scrolledDown).toBeGreaterThan(0);
+
+    await page.getByTestId('trending-repos-pagination-next-button').first().click();
+    await expect(page.getByTestId('trending-repos-pagination-page-indicator').first()).toHaveText('Page 2');
+    expect(await listContainer.evaluate((el) => el.scrollTop)).toBe(0);
+
+    await listContainer.evaluate((el) => {
+      el.scrollTop = el.scrollHeight;
+    });
+    await page.getByTestId('trending-repos-pagination-prev-button').first().click();
+    await expect(page.getByTestId('trending-repos-pagination-page-indicator').first()).toHaveText('Page 1');
+    expect(await listContainer.evaluate((el) => el.scrollTop)).toBe(0);
   });
 });
 
@@ -486,12 +548,21 @@ test.describe('Display mode switching', () => {
 
     await expect(sawPage2).toBe(true);
 
-    // App should keep already loaded data interactive instead of showing
-    // the full-page error screen.
+    // App should keep already loaded data interactive and show retry UI.
     await expect(page.getByTestId('trending-repos-list')).toBeVisible();
     await expect(page.getByTestId('trending-repos-list-item').first()).toBeVisible();
     await expect(page.getByTestId('trending-repos-display-mode-toggle')).toBeVisible();
-    await expect(page.getByTestId('trending-repos-error')).toHaveCount(0);
+    await expect(page.getByTestId('trending-repos-error')).toBeVisible();
+    await expect(page.getByTestId('trending-repos-error-retry')).toBeVisible();
+
+    // Switching to paginated mode must remain usable with loaded data.
+    await page.getByTestId('trending-repos-display-mode-paginated').click();
+    await expect(page.getByTestId('trending-repos-pagination').first()).toBeVisible();
+
+    const pageIndicator = page.getByTestId('trending-repos-pagination-page-indicator').first();
+    await expect(pageIndicator).toHaveText('Page 1');
+    await page.getByTestId('trending-repos-pagination-next-button').first().click();
+    await expect(pageIndicator).toHaveText('Page 2');
   });
 
   test('switching back to Paginated mode restores pagination controls', async ({ page }) => {
@@ -503,6 +574,50 @@ test.describe('Display mode switching', () => {
 
     await page.getByTestId('trending-repos-display-mode-paginated').click();
     await expect(page.getByTestId('trending-repos-pagination').first()).toBeVisible();
+  });
+
+  test('desktop uses internal list-container scrolling in Infinite mode', async ({ page }) => {
+    // Override describe-level mock with enough data to force overflow.
+    await page.unroute('**/api.github.com/search/repositories**');
+
+    const firstApiPage = Array.from({ length: 100 }, (_, i) => makeRepo(i + 1));
+    await page.route('**/api.github.com/search/repositories**', (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          total_count: 500,
+          incomplete_results: false,
+          items: firstApiPage,
+        }),
+      });
+    });
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/');
+    await expect(page.getByTestId('trending-repos-list')).toBeVisible();
+
+    await page.getByTestId('trending-repos-display-mode-infinite').click();
+
+    const listContainer = page.locator('.repos-page__list-container').first();
+    await expect(listContainer).toBeVisible();
+
+    const metricsBefore = await listContainer.evaluate((el) => ({
+      scrollTop: el.scrollTop,
+      scrollHeight: el.scrollHeight,
+      clientHeight: el.clientHeight,
+    }));
+
+    expect(metricsBefore.scrollHeight).toBeGreaterThan(metricsBefore.clientHeight);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+
+    await listContainer.evaluate((el) => {
+      el.scrollTop = el.scrollHeight;
+    });
+
+    const containerScrollTopAfter = await listContainer.evaluate((el) => el.scrollTop);
+    expect(containerScrollTopAfter).toBeGreaterThan(0);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
   });
 
   test('?mode=infinite query param initialises infinite mode', async ({ page }) => {

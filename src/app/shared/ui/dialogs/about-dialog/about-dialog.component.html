@@ -1,31 +1,11 @@
 <header class="about-dialog__header">
-  <h2
-    class="about-dialog__title"
-    id="about-dialog-title"
-    data-testid="app-about-modal-title"
-  >
+  <h2 class="about-dialog__title" id="about-dialog-title" data-testid="app-about-modal-title">
     About this app
   </h2>
-  <button
-    type="button"
-    class="about-dialog__close"
-    data-testid="app-about-modal-close-button"
-    aria-label="Close about dialog"
-    (click)="close()"
-  >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      aria-hidden="true"
-      focusable="false"
-      width="20"
-      height="20"
-    >
+  <button type="button" class="about-dialog__close" data-testid="app-about-modal-close-button"
+    aria-label="Close about dialog" (click)="close()">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" width="20" height="20">
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
@@ -51,11 +31,8 @@
   </section>
 
   <!-- ── Browsing modes ─────────────────────────────────────────────────── -->
-  <section
-    class="about-dialog__section"
-    aria-labelledby="about-section-modes"
-    data-testid="app-about-modal-section-browsing-modes"
-  >
+  <section class="about-dialog__section" aria-labelledby="about-section-modes"
+    data-testid="app-about-modal-section-browsing-modes">
     <h3 class="about-dialog__section-title" id="about-section-modes">
       Browsing modes
     </h3>
@@ -83,11 +60,8 @@
   </section>
 
   <!-- ── Ratings ────────────────────────────────────────────────────────── -->
-  <section
-    class="about-dialog__section"
-    aria-labelledby="about-section-ratings"
-    data-testid="app-about-modal-section-ratings"
-  >
+  <section class="about-dialog__section" aria-labelledby="about-section-ratings"
+    data-testid="app-about-modal-section-ratings">
     <h3 class="about-dialog__section-title" id="about-section-ratings">
       Ratings
     </h3>
@@ -109,23 +83,16 @@
     </h3>
     <p>
       All repository data comes from the
-      <a
-        href="https://docs.github.com/en/rest/search/search"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="about-dialog__link"
-      >GitHub public Search API</a>.
+      <a href="https://docs.github.com/en/rest/search/search" target="_blank" rel="noopener noreferrer"
+        class="about-dialog__link">GitHub public Search API</a>.
       The app reads publicly available repository information only — it does
       not write to, modify, or interact with any GitHub repository.
     </p>
   </section>
 
   <!-- ── API limits ─────────────────────────────────────────────────────── -->
-  <section
-    class="about-dialog__section"
-    aria-labelledby="about-section-limits"
-    data-testid="app-about-modal-section-api-limits"
-  >
+  <section class="about-dialog__section" aria-labelledby="about-section-limits"
+    data-testid="app-about-modal-section-api-limits">
     <h3 class="about-dialog__section-title" id="about-section-limits">
       GitHub API limits
     </h3>
@@ -136,9 +103,10 @@
       decline requests.
     </p>
     <p>
-      If this happens, the app will show a clear error message and a
-      <strong>Retry</strong> button. Waiting a few minutes and retrying is
-      usually enough to restore normal access.
+      If this happens, the app shows a clear error message and a
+      <strong>Try again</strong> button that retries the last request
+      immediately. If the limit window is still active, waiting a few minutes
+      before trying again is usually enough to restore normal access.
     </p>
     <p>
       In a secure development or deployment environment, adding a GitHub
@@ -149,11 +117,8 @@
   </section>
 
   <!-- ── What's next ────────────────────────────────────────────────────── -->
-  <section
-    class="about-dialog__section about-dialog__section--roadmap"
-    aria-labelledby="about-section-roadmap"
-    data-testid="app-about-modal-section-roadmap"
-  >
+  <section class="about-dialog__section about-dialog__section--roadmap" aria-labelledby="about-section-roadmap"
+    data-testid="app-about-modal-section-roadmap">
     <h3 class="about-dialog__section-title" id="about-section-roadmap">
       What's next
     </h3>
@@ -207,11 +172,7 @@
 </div>
 
 <footer class="about-dialog__footer">
-  <button
-    type="button"
-    class="about-dialog__close-btn"
-    (click)="close()"
-  >
+  <button type="button" class="about-dialog__close-btn" (click)="close()">
     Close
   </button>
 </footer>

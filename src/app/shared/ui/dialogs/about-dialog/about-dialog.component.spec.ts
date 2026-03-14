@@ -48,7 +48,7 @@ describe('AboutDialogComponent', () => {
         /rate.{0,10}limit/i,
       );
       expect(screen.getByTestId('app-about-modal-section-api-limits')).toHaveTextContent(
-        /retry/i,
+        /retry|try again/i,
       );
     });
 

@@ -23,6 +23,18 @@
   </div>
 
   <div class="pagination__controls">
+    @if (currentPage > 1) {
+      <button
+        class="pagination__btn pagination__btn--top"
+        type="button"
+        aria-label="Go to first page"
+        data-testid="trending-repos-pagination-top-button"
+        (click)="topClick.emit()"
+      >
+        ^ Top
+      </button>
+    }
+
     <button
       class="pagination__btn pagination__btn--prev"
       type="button"

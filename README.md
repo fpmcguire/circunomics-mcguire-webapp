@@ -44,17 +44,17 @@ npm start
 
 ## Available commands
 
-| Command | Description |
-|---|---|
-| `npm start` | Start dev server at `localhost:4200` |
-| `npm run build` | Production build |
-| `npm test` | Run unit/integration tests (Vitest) |
-| `npm run test:watch` | Run tests in watch mode |
-| `npm run lint` | Run ESLint |
-| `npm run format` | Format source with Prettier |
-| `npm run format:check` | Check formatting without writing |
-| `npm run e2e` | Run Playwright E2E tests |
-| `npm run e2e:ui` | Open Playwright interactive UI |
+| Command                | Description                          |
+| ---------------------- | ------------------------------------ |
+| `npm start`            | Start dev server at `localhost:4200` |
+| `npm run build`        | Production build                     |
+| `npm test`             | Run unit/integration tests (Vitest)  |
+| `npm run test:watch`   | Run tests in watch mode              |
+| `npm run lint`         | Run ESLint                           |
+| `npm run format`       | Format source with Prettier          |
+| `npm run format:check` | Check formatting without writing     |
+| `npm run e2e`          | Run Playwright E2E tests             |
+| `npm run e2e:ui`       | Open Playwright interactive UI       |
 
 ---
 
@@ -83,7 +83,7 @@ It is never stored, logged, or persisted beyond the HTTP request.
 
 ### Graceful error handling (for review)
 
-The app handles GitHub API failures differently depending on *when* they happen:
+The app handles GitHub API failures differently depending on _when_ they happen:
 
 - **Initial load fails** (for example, first request gets 403/429):
   - The app shows the dedicated error state with a Retry button.
@@ -93,7 +93,9 @@ The app handles GitHub API failures differently depending on *when* they happen:
   - Already loaded repos remain visible and interactive.
   - The display-mode toggle remains usable.
   - The app does **not** switch to the global full-page error UI.
-  - Further API paging is stopped for that session (`hasMore = false`) to avoid repeated failing requests.
+  - An inline error banner is shown with a **Try again** button.
+  - **Try again** immediately retries the exact failed API page.
+  - Further auto-paging is paused until a successful retry, avoiding repeated failing requests.
 
 This behavior is implemented in the trending repos facade and validated with tests for both:
 
@@ -104,15 +106,15 @@ This behavior is implemented in the trending repos facade and validated with tes
 
 ## Tooling
 
-| Tool | Purpose |
-|---|---|
-| Angular 21 | Framework — standalone components, signals, modern control flow |
-| Vitest | Unit and integration test runner |
-| Playwright | End-to-end tests |
-| ESLint + angular-eslint | Linting (flat config, ESLint 10) |
-| Prettier | Code formatting |
-| @angular/cdk | Accessible dialog — focus trap, Escape, `aria-modal`, focus restoration |
-| @testing-library/angular | Integration testing utilities |
+| Tool                     | Purpose                                                                 |
+| ------------------------ | ----------------------------------------------------------------------- |
+| Angular 21               | Framework — standalone components, signals, modern control flow         |
+| Vitest                   | Unit and integration test runner                                        |
+| Playwright               | End-to-end tests                                                        |
+| ESLint + angular-eslint  | Linting (flat config, ESLint 10)                                        |
+| Prettier                 | Code formatting                                                         |
+| @angular/cdk             | Accessible dialog — focus trap, Escape, `aria-modal`, focus restoration |
+| @testing-library/angular | Integration testing utilities                                           |
 
 ---
 

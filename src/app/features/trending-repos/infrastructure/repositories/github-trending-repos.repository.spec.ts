@@ -138,6 +138,29 @@ describe('GithubTrendingReposRepository', () => {
     httpMock.verify();
   });
 
+  it('maps a 403 with x-ratelimit-remaining=0 to a rateLimit AppError', () => {
+    repo.fetchTrendingRepos({ page: 1, perPage: 30, dayRange: 30 }).subscribe({
+      error: (err) => {
+        expect(err.kind).toBe('rateLimit');
+        expect(err.statusCode).toBe(403);
+      },
+    });
+
+    httpMock
+      .expectOne((r) => r.url.includes('api.github.com'))
+      .flush(
+        { message: 'Forbidden' },
+        {
+          status: 403,
+          statusText: 'Forbidden',
+          headers: {
+            'x-ratelimit-remaining': '0',
+          },
+        },
+      );
+    httpMock.verify();
+  });
+
   it('maps a 500 error to an unknown AppError', () => {
     repo.fetchTrendingRepos({ page: 1, perPage: 30, dayRange: 30 }).subscribe({
       error: (err) => {

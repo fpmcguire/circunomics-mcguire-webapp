@@ -104,6 +104,8 @@ export class GithubTrendingReposRepository extends TrendingReposRepository {
     if (error.status === 403) {
       // GitHub returns 403 for rate-limit exhaustion on unauthenticated requests.
       // Check the message to distinguish it from a genuine 403 auth/permission error.
+      const rateLimitRemaining = error.headers?.get('x-ratelimit-remaining');
+      const isRateLimitFromHeaders = rateLimitRemaining === '0';
       const isRateLimit =
         typeof error.error === 'object' &&
         error.error !== null &&
@@ -112,7 +114,9 @@ export class GithubTrendingReposRepository extends TrendingReposRepository {
           .toLowerCase()
           .includes('rate limit');
 
-      return isRateLimit ? APP_ERRORS.rateLimitForbidden() : APP_ERRORS.unknown(403);
+      return isRateLimit || isRateLimitFromHeaders
+        ? APP_ERRORS.rateLimitForbidden()
+        : APP_ERRORS.unknown(403);
     }
     return APP_ERRORS.unknown(error.status);
   }

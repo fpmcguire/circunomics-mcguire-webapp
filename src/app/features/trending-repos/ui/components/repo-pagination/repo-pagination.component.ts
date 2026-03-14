@@ -45,6 +45,9 @@ export class RepoPaginationComponent {
   /** Emitted when the user clicks the Previous button. */
   @Output() previousClick = new EventEmitter<void>();
 
+  /** Emitted when the user clicks the Top button. */
+  @Output() topClick = new EventEmitter<void>();
+
   /** Emitted when the user clicks the Next button. */
   @Output() nextClick = new EventEmitter<void>();
 }

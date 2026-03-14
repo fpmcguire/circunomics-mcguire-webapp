@@ -242,6 +242,14 @@ export class TrendingReposFacade {
   }
 
   /**
+   * Jump directly to the first UI page (paginated mode).
+   */
+  goToFirstPage(): void {
+    if (this._uiPage() === 1) return;
+    this._uiPage.set(1);
+  }
+
+  /**
    * Retry after an error.
    * Replays the exact API page that failed, using the recorded _lastAttemptedPage.
    * If no page was ever attempted, defaults to page 1.
@@ -322,14 +330,14 @@ export class TrendingReposFacade {
 
           const hasLoadedRepos = this._state().repos.length > 0;
           if (hasLoadedRepos) {
-            // A later-page failure should not collapse the already loaded list
-            // into a global error screen. Keep current data interactive and
-            // stop requesting additional pages.
+            // A later-page failure should not collapse the already loaded list.
+            // Keep current data interactive, stop automatic pagination, and
+            // surface a retry-capable error banner.
             this._patch({
               isLoading: false,
               isLoadingMore: false,
               hasMore: false,
-              error: null,
+              error: err,
             });
             return;
           }
