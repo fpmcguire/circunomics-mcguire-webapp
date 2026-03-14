@@ -212,3 +212,63 @@
     outline-offset: 2px;
   }
 }
+
+// ── What's next — roadmap section ────────────────────────────────────────────
+
+.about-dialog__section--roadmap {
+  // Slightly warmer background to distinguish from content sections
+  background: var(--color-surface-raised);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  // Override the default top border separator — the background handles separation
+  border-top: none !important;
+  margin-top: var(--space-2);
+
+  .about-dialog__section-title {
+    color: var(--color-text-primary);
+  }
+
+  p {
+    color: var(--color-text-secondary);
+  }
+}
+
+.about-dialog__roadmap-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.about-dialog__roadmap-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.about-dialog__roadmap-group-label {
+  font-size: var(--text-xs) !important;
+  font-weight: var(--weight-semibold) !important;
+  color: var(--color-text-muted) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.about-dialog__roadmap-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.about-dialog__roadmap-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full, 9999px);
+  padding: 3px var(--space-3);
+  line-height: var(--leading-normal);
+  white-space: nowrap;
+}

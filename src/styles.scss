@@ -35,6 +35,11 @@ body.repo-details-open .cdk-global-overlay-wrapper {
 //
 // Overlay priority: CDK renders each dialog in DOM order — the last-opened
 // dialog sits naturally on top. No z-index override is needed.
+//
+// Product intent: the About button in the header is intentionally reachable
+// while other dialogs are open. Opening About over a repo-details dialog is
+// a supported and deliberate UX path — the user should be able to check app
+// context without dismissing what they were already looking at.
 // =============================================================================
 
 .about-dialog-backdrop {
@@ -47,9 +52,17 @@ body.about-open .cdk-global-overlay-wrapper {
 }
 
 .about-dialog-panel {
-  width: min(560px, calc(100vw - var(--space-6)));
-  max-height: calc(100dvh - var(--space-6));
+  // Keep a small vertical inset so the modal never touches viewport edges.
+  // `dvh` tracks the dynamic viewport height (mobile browser UI aware).
+  width: min(560px, calc(100vw - 16px));
+  max-height: calc(100dvh - 24px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+@supports not (height: 100dvh) {
+  .about-dialog-panel {
+    max-height: calc(100vh - 24px);
+  }
 }

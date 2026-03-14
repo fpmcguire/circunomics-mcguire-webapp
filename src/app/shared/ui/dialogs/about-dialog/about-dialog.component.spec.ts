@@ -52,6 +52,15 @@ describe('AboutDialogComponent', () => {
       );
     });
 
+    it('renders the roadmap section with all three groups', async () => {
+      await renderDialog();
+      const section = screen.getByTestId('app-about-modal-section-roadmap');
+      expect(section).toBeInTheDocument();
+      expect(section).toHaveTextContent(/discovery/i);
+      expect(section).toHaveTextContent(/detail/i);
+      expect(section).toHaveTextContent(/personalisation/i);
+    });
+
     it('has a close button', async () => {
       await renderDialog();
       expect(screen.getByTestId('app-about-modal-close-button')).toBeInTheDocument();

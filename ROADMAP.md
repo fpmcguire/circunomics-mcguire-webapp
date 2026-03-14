@@ -601,3 +601,11 @@ Framed as experiment-ready UX exploration: one codebase, one shared data layer, 
 | UTC-safe date utilities | Fixed in Step 3 correction pass ✅ |
 | Explicit empty-result + malformed-response handling | Fixed in Step 3 correction pass ✅ |
 | Docs must stay in sync with actual code | Updated after each step ✅ |
+
+---
+
+## What comes next
+
+Proposed future features — including discovery tools, detail & analysis enhancements, and personalisation capabilities — are tracked and prioritised in **[FUTURE-FEATURES.md](./FUTURE-FEATURES.md)**.
+
+That document is the single source of truth for proposed scope beyond the current implementation. It covers ROI scoring, product rationale, technical notes, and a recommended implementation order.

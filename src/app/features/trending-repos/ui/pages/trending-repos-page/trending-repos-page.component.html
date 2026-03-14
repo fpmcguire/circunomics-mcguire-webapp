@@ -5,7 +5,7 @@
 <ng-template #paginationControls>
   <app-repo-pagination [currentPage]="facade.visiblePage()" [canGoPrevious]="facade.canGoPrevious()"
     [canGoNext]="facade.canGoNext()" [isLoadingMore]="facade.isLoadingMore()" [rangeStart]="facade.visibleRangeStart()"
-    [rangeEnd]="facade.visibleRangeEnd()" [totalLoaded]="facade.totalLoaded()" (topClick)="onTopClick()"
+    [rangeEnd]="facade.visibleRangeEnd()" [totalLoaded]="facade.totalLoaded()"
     (previousClick)="facade.goToPreviousPage()" (nextClick)="facade.goToNextPage()" />
 </ng-template>
 

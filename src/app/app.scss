@@ -1,7 +1,13 @@
 // app-root sits between body and the shell children (header, main, footer).
 // On non-mobile it must be transparent to the flex chain so main can fill
 // the remaining viewport height between header and footer.
-.app-root {
+//
+// NOTE: .app-root is compiled under _ngcontent by Angular's Emulated view
+// encapsulation and therefore never matches the host element at runtime.
+// :host compiles to [_nghost-{hash}], which does match, so the flex chain
+// resolves correctly and the list container fills the space between header
+// and footer as intended.
+:host {
   @media (min-width: 641px) {
     display: flex;
     flex-direction: column;

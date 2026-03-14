@@ -14,6 +14,15 @@ import {
 // deterministic and do not depend on network access or rate limits.
 // =============================================================================
 
+const scrollInfiniteListToBottom = async (page: Parameters<typeof test>[0]['page']) => {
+  const listContainer = page.locator('.repos-page__list-container').first();
+  await expect(listContainer).toBeVisible();
+
+  await listContainer.evaluate((el) => {
+    el.scrollTop = el.scrollHeight;
+  });
+};
+
 // ── 1. Initial page load ─────────────────────────────────────────────────────
 
 test.describe('Initial page load', () => {
@@ -161,24 +170,6 @@ test.describe('Pagination navigation', () => {
 
     // Go back to page 1
     await page.getByTestId('trending-repos-pagination-prev-button').first().click();
-    await expect(page.getByTestId('trending-repos-list-item')).toHaveCount(10);
-  });
-
-  test('Top button appears off page 1 and returns to page 1 when clicked', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.getByTestId('trending-repos-list')).toBeVisible();
-
-    const topButton = page.getByTestId('trending-repos-pagination-top-button').first();
-    const pageIndicator = page.getByTestId('trending-repos-pagination-page-indicator').first();
-
-    await expect(topButton).toHaveCount(0);
-
-    await page.getByTestId('trending-repos-pagination-next-button').first().click();
-    await expect(pageIndicator).toHaveText('Page 2');
-    await expect(topButton).toBeVisible();
-
-    await topButton.click();
-    await expect(pageIndicator).toHaveText('Page 1');
     await expect(page.getByTestId('trending-repos-list-item')).toHaveCount(10);
   });
 
@@ -438,28 +429,28 @@ test.describe('Display mode switching', () => {
 
     await page.getByTestId('trending-repos-display-mode-infinite').click();
 
-    // With very fast mocked responses, sentinel/loading-more can appear and
-    // disappear between poll ticks. A stable signal is that infinite mode
-    // triggers at least one additional API fetch after the initial load.
-    await expect
-      .poll(() => apiCallCount, {
-        timeout: 10_000,
-      })
-      .toBeGreaterThan(1);
+    // Infinite mode relies on list-container scrolling; explicitly scroll to
+    // trigger sentinel intersection in a deterministic way.
+    for (let i = 0; i < 8 && apiCallCount === 1; i++) {
+      await scrollInfiniteListToBottom(page);
+      await page.waitForTimeout(120);
+    }
+
+    await expect(apiCallCount).toBeGreaterThan(1);
   });
 
   test('later-page 403 in Infinite mode keeps list and mode toggle usable', async ({ page }) => {
     // Override describe-level mock so this test can emulate page-11 failure.
     await page.unroute('**/api.github.com/search/repositories**');
 
-    let sawPage11 = false;
+    let sawPage2 = false;
 
     await page.route('**/api.github.com/search/repositories**', (route) => {
       const requestUrl = new URL(route.request().url());
       const pageParam = Number(requestUrl.searchParams.get('page') ?? '1');
 
-      if (pageParam === 11) {
-        sawPage11 = true;
+      if (pageParam === 2) {
+        sawPage2 = true;
         route.fulfill({
           status: 403,
           contentType: 'application/json',
@@ -487,12 +478,13 @@ test.describe('Display mode switching', () => {
 
     await page.getByTestId('trending-repos-display-mode-infinite').click();
 
-    // Wait for the failing later page to be attempted.
-    await expect
-      .poll(() => sawPage11, {
-        timeout: 15_000,
-      })
-      .toBe(true);
+    // Drive the internal scroll container until API page 2 is requested and fails.
+    for (let i = 0; i < 20 && !sawPage2; i++) {
+      await scrollInfiniteListToBottom(page);
+      await page.waitForTimeout(120);
+    }
+
+    await expect(sawPage2).toBe(true);
 
     // App should keep already loaded data interactive instead of showing
     // the full-page error screen.

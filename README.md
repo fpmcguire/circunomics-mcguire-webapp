@@ -44,49 +44,17 @@ npm start
 
 ## Available commands
 
-| Command                | Description                                                      |
-| ---------------------- | ---------------------------------------------------------------- |
-| `npm start`            | Start dev server at `localhost:4200`                             |
-| `npm run build`        | Production build                                                 |
-| `npm run build:subdir` | Production build for `/circunomics-webapp/` subdirectory hosting |
-| `npm test`             | Run unit/integration tests (Vitest)                              |
-| `npm run test:watch`   | Run tests in watch mode                                          |
-| `npm run lint`         | Run ESLint                                                       |
-| `npm run format`       | Format source with Prettier                                      |
-| `npm run format:check` | Check formatting without writing                                 |
-| `npm run e2e`          | Run Playwright E2E tests                                         |
-| `npm run e2e:ui`       | Open Playwright interactive UI                                   |
-
----
-
-## Deploying without SSR (subdirectory hosting)
-
-This app is already configured as a client-side rendered Angular application (no SSR server required).
-
-For deployment to `https://frank-mcguire.com/circunomics-webapp`:
-
-1. Build with subdirectory URLs:
-
-```bash
-npm run build:subdir
-```
-
-2. Deploy the contents of `dist/circunomics-mcguire-webapp/browser/` to your server under:
-
-- `/circunomics-webapp/`
-
-3. Configure your web server to rewrite all unknown paths under `/circunomics-webapp/*` to:
-
-- `/circunomics-webapp/index.html`
-
-Why the rewrite is needed:
-
-- Angular routing is client-side. Without the rewrite, refreshing a deep link (for example `/circunomics-webapp/repo/123`) returns a server 404.
-
-Example rewrite targets by server:
-
-- Nginx: `try_files $uri $uri/ /circunomics-webapp/index.html;`
-- Apache: `RewriteRule ^circunomics-webapp/.*$ /circunomics-webapp/index.html [L]`
+| Command | Description |
+|---|---|
+| `npm start` | Start dev server at `localhost:4200` |
+| `npm run build` | Production build |
+| `npm test` | Run unit/integration tests (Vitest) |
+| `npm run test:watch` | Run tests in watch mode |
+| `npm run lint` | Run ESLint |
+| `npm run format` | Format source with Prettier |
+| `npm run format:check` | Check formatting without writing |
+| `npm run e2e` | Run Playwright E2E tests |
+| `npm run e2e:ui` | Open Playwright interactive UI |
 
 ---
 
@@ -115,7 +83,7 @@ It is never stored, logged, or persisted beyond the HTTP request.
 
 ### Graceful error handling (for review)
 
-The app handles GitHub API failures differently depending on _when_ they happen:
+The app handles GitHub API failures differently depending on *when* they happen:
 
 - **Initial load fails** (for example, first request gets 403/429):
   - The app shows the dedicated error state with a Retry button.
@@ -136,15 +104,15 @@ This behavior is implemented in the trending repos facade and validated with tes
 
 ## Tooling
 
-| Tool                     | Purpose                                                                 |
-| ------------------------ | ----------------------------------------------------------------------- |
-| Angular 21               | Framework — standalone components, signals, modern control flow         |
-| Vitest                   | Unit and integration test runner                                        |
-| Playwright               | End-to-end tests                                                        |
-| ESLint + angular-eslint  | Linting (flat config, ESLint 10)                                        |
-| Prettier                 | Code formatting                                                         |
-| @angular/cdk             | Accessible dialog — focus trap, Escape, `aria-modal`, focus restoration |
-| @testing-library/angular | Integration testing utilities                                           |
+| Tool | Purpose |
+|---|---|
+| Angular 21 | Framework — standalone components, signals, modern control flow |
+| Vitest | Unit and integration test runner |
+| Playwright | End-to-end tests |
+| ESLint + angular-eslint | Linting (flat config, ESLint 10) |
+| Prettier | Code formatting |
+| @angular/cdk | Accessible dialog — focus trap, Escape, `aria-modal`, focus restoration |
+| @testing-library/angular | Integration testing utilities |
 
 ---
 

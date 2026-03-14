@@ -40,10 +40,9 @@
       What this app does
     </h3>
     <p>
-      Circunomics Trending Repos surfaces the most-starred open-source
-      repositories created on GitHub in the last 30 days. Results are ranked
-      by star count using the GitHub public search API and refresh each time
-      you load the page.
+      Circunomics Trending Repos highlights the most-starred repositories
+      created recently on GitHub, using GitHub's public search API. Results
+      are ranked by star count and refresh each time you load the page.
     </p>
     <p>
       You can browse the list, open a repository for more detail, and leave
@@ -97,9 +96,9 @@
       assign a 1–5 star rating.
     </p>
     <p>
-      Ratings are saved locally in your browser and are not sent to GitHub
-      or any external service. They persist within the same browser session
-      but are not shared between devices or browsers.
+      Ratings are saved locally in this browser and are not sent to GitHub
+      or any external service. They remain available on future visits in the
+      same browser unless you clear browser storage.
     </p>
   </section>
 
@@ -147,6 +146,50 @@
       is required for normal browsing and no credentials are stored in the
       app's source code.
     </p>
+  </section>
+
+  <!-- ── What's next ────────────────────────────────────────────────────── -->
+  <section
+    class="about-dialog__section about-dialog__section--roadmap"
+    aria-labelledby="about-section-roadmap"
+    data-testid="app-about-modal-section-roadmap"
+  >
+    <h3 class="about-dialog__section-title" id="about-section-roadmap">
+      What's next
+    </h3>
+    <p>Planned improvements to make the app more powerful and personal.</p>
+
+    <div class="about-dialog__roadmap-groups">
+
+      <div class="about-dialog__roadmap-group">
+        <p class="about-dialog__roadmap-group-label">Discovery &amp; search</p>
+        <ul class="about-dialog__roadmap-chips" aria-label="Planned discovery and search features">
+          <li class="about-dialog__roadmap-chip">Adjustable date range</li>
+          <li class="about-dialog__roadmap-chip">Keyword search</li>
+          <li class="about-dialog__roadmap-chip">Topic-based filtering</li>
+          <li class="about-dialog__roadmap-chip">Advanced filters</li>
+        </ul>
+      </div>
+
+      <div class="about-dialog__roadmap-group">
+        <p class="about-dialog__roadmap-group-label">Detail &amp; analysis</p>
+        <ul class="about-dialog__roadmap-chips" aria-label="Planned detail and analysis features">
+          <li class="about-dialog__roadmap-chip">Velocity &amp; momentum stats</li>
+          <li class="about-dialog__roadmap-chip">Star-history chart</li>
+          <li class="about-dialog__roadmap-chip">Side-by-side comparison</li>
+        </ul>
+      </div>
+
+      <div class="about-dialog__roadmap-group">
+        <p class="about-dialog__roadmap-group-label">Personalisation</p>
+        <ul class="about-dialog__roadmap-chips" aria-label="Planned personalisation features">
+          <li class="about-dialog__roadmap-chip">Saved views</li>
+          <li class="about-dialog__roadmap-chip">Collections &amp; shortlists</li>
+          <li class="about-dialog__roadmap-chip">AI-assisted search</li>
+        </ul>
+      </div>
+
+    </div>
   </section>
 
   <!-- ── About this implementation ─────────────────────────────────────── -->

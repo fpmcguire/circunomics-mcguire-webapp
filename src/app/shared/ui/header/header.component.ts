@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { Dialog } from '@angular/cdk/dialog';
-import { Overlay } from '@angular/cdk/overlay';
 import { AboutDialogComponent } from '../dialogs/about-dialog/about-dialog.component';
 
 @Component({
@@ -14,19 +13,28 @@ import { AboutDialogComponent } from '../dialogs/about-dialog/about-dialog.compo
 })
 export class HeaderComponent {
   private readonly dialog = inject(Dialog);
-  private readonly overlay = inject(Overlay);
   private readonly document = inject(DOCUMENT);
 
+  /**
+   * Opens the About dialog.
+   *
+   * This is intentionally reachable at any time — including while a
+   * RepoDetailsDialog is already open. Opening About in that context is a
+   * deliberate product choice: the header remains interactive so users can
+   * access app-level context without having to dismiss whatever they were
+   * looking at first.
+   *
+   * CDK overlay ordering handles the stacking correctly: About is appended
+   * to the document after the existing dialog and therefore sits on top as
+   * the active focus-trapped surface. Closing About returns focus here;
+   * the underlying dialog is unaffected.
+   */
   openAbout(): void {
     const ref = this.dialog.open(AboutDialogComponent, {
       ariaLabelledBy: 'about-dialog-title',
       panelClass: 'about-dialog-panel',
       backdropClass: 'about-dialog-backdrop',
-      width: 'min(560px, calc(100vw - 2rem))',
-      maxWidth: 'calc(100vw - 2rem)',
-      maxHeight: 'calc(100dvh - 2rem)',
-      positionStrategy: this.overlay.position().global().centerHorizontally().centerVertically(),
-      scrollStrategy: this.overlay.scrollStrategies.block(),
+      maxHeight: 'calc(100dvh - 24px)',
     });
 
     this.document.body.classList.add('about-open');

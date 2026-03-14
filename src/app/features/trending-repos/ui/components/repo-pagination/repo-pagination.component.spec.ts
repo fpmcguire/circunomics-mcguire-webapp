@@ -41,16 +41,6 @@ describe('RepoPaginationComponent', () => {
       expect(screen.getByTestId('trending-repos-pagination-next-button')).toBeInTheDocument();
     });
 
-    it('does not render the top button on page 1', async () => {
-      await renderPagination({ currentPage: 1 });
-      expect(screen.queryByTestId('trending-repos-pagination-top-button')).not.toBeInTheDocument();
-    });
-
-    it('renders the top button when not on the first page', async () => {
-      await renderPagination({ currentPage: 2 });
-      expect(screen.getByTestId('trending-repos-pagination-top-button')).toBeInTheDocument();
-    });
-
     it('shows the current page indicator', async () => {
       await renderPagination({ currentPage: 3 });
       expect(screen.getByTestId('trending-repos-pagination-page-indicator')).toHaveTextContent(
@@ -117,17 +107,6 @@ describe('RepoPaginationComponent', () => {
       expect(onNext).toHaveBeenCalledOnce();
     });
 
-    it('emits topClick when the top button is clicked', async () => {
-      const user = userEvent.setup();
-      const onTop = vi.fn();
-      await render(RepoPaginationComponent, {
-        componentInputs: { ...BASE_INPUTS, currentPage: 2, canGoPrevious: true },
-        on: { topClick: onTop },
-      });
-      await user.click(screen.getByTestId('trending-repos-pagination-top-button'));
-      expect(onTop).toHaveBeenCalledOnce();
-    });
-
     it('does not emit previousClick when the previous button is disabled', async () => {
       const onPrev = vi.fn();
       await render(RepoPaginationComponent, {
@@ -155,14 +134,6 @@ describe('RepoPaginationComponent', () => {
       expect(screen.getByTestId('trending-repos-pagination-next-button')).toHaveAttribute(
         'aria-label',
         'Go to next page',
-      );
-    });
-
-    it('top button has aria-label "Go to first page"', async () => {
-      await renderPagination({ currentPage: 2 });
-      expect(screen.getByTestId('trending-repos-pagination-top-button')).toHaveAttribute(
-        'aria-label',
-        'Go to first page',
       );
     });
 
