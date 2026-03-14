@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:subdir": "ng build --configuration production --base-href /circunomics-webapp/ --deploy-url /circunomics-webapp/",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test:ci": "ng test --watch=false",
