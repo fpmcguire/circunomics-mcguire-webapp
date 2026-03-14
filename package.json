@@ -1,12 +1,13 @@
 {
   "name": "circunomics-mcguire-webapp",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "test:ci": "ng test --watch=false",
     "test:watch": "ng test --watch",
     "lint": "ng lint",
     "e2e": "playwright test",

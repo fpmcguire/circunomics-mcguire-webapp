@@ -64,6 +64,36 @@ The rate-limit section is specifically valuable for demo contexts: it sets expec
 
 ---
 
+## v2.1.0 — Step 9 Polish & Hygiene ✅ DONE
+
+**Goal:** Consolidate enhancements made during Step 9 review into a clean release.
+
+### Changes
+
+- **About modal "What's next" section** — grouped roadmap chips (Discovery & search · Detail & analysis · Personalisation) surfacing future features in user-facing language
+- **`:host` selector fix in `app.scss`** — `.app-root` was compiled under `_ngcontent` by Angular's Emulated view encapsulation and never matched the host element; switching to `:host` activates the full flex chain and makes the internal scroll container work as intended
+- **Global `app-root` fallback** in `styles.scss` — defensive type selector alongside `:host` for hot-reload and render timing edge cases
+- **About dialog overlay CSS improvements** — `100dvh`-aware height, `@supports` fallback for older browsers, tighter viewport-aware width
+- **Pagination scroll fix** — `(previousClick)` and `(nextClick)` on the pagination template now correctly route through `onPreviousClick()` / `onNextClick()` on the page component, which also call `_scrollListToTop()`; previously the scroll reset was bypassed
+- **`--color-surface-raised` design token added** to `_tokens.scss` — was referenced but undefined, causing the roadmap section background to render as transparent
+- **4 new pagination a11y tests** — aria-labels on previous, next, and top buttons; nav landmark label
+- **`targeted-e2e.log` removed and added to `.gitignore`**
+- **`playwright-report/` removed** from committed tree (already in `.gitignore`)
+- **Version bumped** — `package.json` and footer: `2.0.0 → 2.1.0`
+- **`TESTING.md` updated** — test counts corrected to 192; `test:ci` script documented for CI usage
+- **`package.json`** — `test:ci` script added (`ng test --watch=false`) for clean CI exit
+- **README rate-limit wording tightened** — now explicitly names the GitHub Search API sub-limit (10 req/min unauthenticated, 30 req/min authenticated) rather than mixing Search and general REST limits
+- **`docs/ARCHITECTURE.md`** — page component comment clarified: hosts the mode toggle UI but facade owns the runtime display-mode state
+
+### Verification
+| Check | Result |
+|---|---|
+| `ng build` | ✅ Clean, no warnings |
+| `ng test` | ✅ 192/192 passing (14 files) |
+| `ng lint` | ✅ All files pass |
+
+---
+
 ## v2.0.0 — Post-Step-8 Hygiene Pass ✅ DONE
 
 **Goal:** Submission-clean repo — no committed generated artifacts, accurate docs, consistent wording.

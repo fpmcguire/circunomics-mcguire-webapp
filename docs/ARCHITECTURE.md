@@ -65,7 +65,7 @@ src/
             │
             └── ui/                  # Presentation layer — Angular components only
                 ├── pages/
-                │   └── trending-repos-page/       # Routable page — injects facade, owns mode toggle
+                │   └── trending-repos-page/       # Routable page — injects facade, hosts mode toggle (facade owns mode state)
                 ├── components/                    # RepoList, RepoCard, RepoPagination, StarRating,
                 │                                  # DisplayModeToggle
                 └── dialogs/                       # RepoDetailsDialog via CDK Dialog

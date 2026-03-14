@@ -60,8 +60,10 @@ npm start
 
 ## GitHub API rate limits
 
-The app uses the public GitHub Search API (`api.github.com`), which allows **10 requests/minute**
-unauthenticated and **5,000 requests/hour** with a Personal Access Token.
+The app uses the [GitHub Search API](https://docs.github.com/en/rest/search/search) (`api.github.com/search/repositories`).
+The Search API has its own rate limit — stricter than general GitHub REST endpoints — of **10 requests/minute** for
+unauthenticated clients. Adding a Personal Access Token raises this to **30 requests/minute** for search
+(authenticated REST requests more broadly allow 5,000/hour, but the Search API sub-limit applies regardless).
 
 To use a token locally:
 

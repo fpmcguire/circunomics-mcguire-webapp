@@ -223,8 +223,9 @@ it('updates _state signal')
 ## Running Tests
 
 ```bash
-npm test              # All unit + integration tests (Vitest, single run)
-npm run test:watch    # Watch mode during development
+npm test              # All unit + integration tests (Vitest — interactive/watch in terminal)
+npm run test:ci       # Same tests, exits cleanly — use this in CI pipelines (--watch=false)
+npm run test:watch    # Explicit watch mode during development
 npm run e2e           # Playwright E2E (requires dev server on :4200)
 npm run e2e:ui        # Playwright interactive UI
 ```
@@ -243,13 +244,13 @@ npm run e2e:ui        # Playwright interactive UI
 | `trending-repos.facade.spec.ts` | 58 | Integration — all facade flows, both display modes |
 | `repo-card.component.spec.ts` | 12 | Integration — card rendering + interactions |
 | `repo-list.component.spec.ts` | 15 | Integration — list states + events |
-| `repo-pagination.component.spec.ts` | 15 | Integration — pagination controls |
+| `repo-pagination.component.spec.ts` | 19 | Integration — pagination controls + a11y labels |
 | `star-rating.component.spec.ts` | 10 | Integration — rating widget |
 | `repo-details-dialog.component.spec.ts` | 18 | Integration — dialog rendering + save/dismiss |
 | `display-mode-toggle.component.spec.ts` | 7 | Integration — segmented control rendering + output |
 | `intersection-observer.directive.spec.ts` | 5 | Unit — IntersectionObserver directive |
-| `about-dialog.component.spec.ts` | 8 | Integration — content sections, close behaviour, a11y |
-| **Total** | **184** | |
+| `about-dialog.component.spec.ts` | 9 | Integration — content sections, roadmap section, close behaviour, a11y |
+| **Total** | **192** | |
 
 **E2E (Playwright):** 7 test groups in `e2e/trending-repos.spec.ts`:
 1. Initial page load
