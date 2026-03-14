@@ -25,12 +25,12 @@ describe('AboutDialogComponent', () => {
     it('renders the browsing modes section', async () => {
       await renderDialog();
       expect(screen.getByTestId('app-about-modal-section-browsing-modes')).toBeInTheDocument();
-      expect(
-        screen.getByTestId('app-about-modal-section-browsing-modes'),
-      ).toHaveTextContent(/paginated/i);
-      expect(
-        screen.getByTestId('app-about-modal-section-browsing-modes'),
-      ).toHaveTextContent(/infinite/i);
+      expect(screen.getByTestId('app-about-modal-section-browsing-modes')).toHaveTextContent(
+        /paginated/i,
+      );
+      expect(screen.getByTestId('app-about-modal-section-browsing-modes')).toHaveTextContent(
+        /infinite/i,
+      );
     });
 
     it('renders the ratings section', async () => {

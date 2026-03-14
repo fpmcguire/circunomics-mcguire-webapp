@@ -235,14 +235,18 @@ test.describe('Pagination navigation', () => {
     expect(scrolledDown).toBeGreaterThan(0);
 
     await page.getByTestId('trending-repos-pagination-next-button').first().click();
-    await expect(page.getByTestId('trending-repos-pagination-page-indicator').first()).toHaveText('Page 2');
+    await expect(page.getByTestId('trending-repos-pagination-page-indicator').first()).toHaveText(
+      'Page 2',
+    );
     expect(await listContainer.evaluate((el) => el.scrollTop)).toBe(0);
 
     await listContainer.evaluate((el) => {
       el.scrollTop = el.scrollHeight;
     });
     await page.getByTestId('trending-repos-pagination-prev-button').first().click();
-    await expect(page.getByTestId('trending-repos-pagination-page-indicator').first()).toHaveText('Page 1');
+    await expect(page.getByTestId('trending-repos-pagination-page-indicator').first()).toHaveText(
+      'Page 1',
+    );
     expect(await listContainer.evaluate((el) => el.scrollTop)).toBe(0);
   });
 });
